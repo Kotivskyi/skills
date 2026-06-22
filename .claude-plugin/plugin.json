@@ -1,0 +1,14 @@
+{
+  "name": "kotivskyi-skills",
+  "version": "0.1.0",
+  "description": "Vitalii Kotivskyi's Claude Code skills: plan work, drive PRs to green, and ship safely.",
+  "author": {
+    "name": "Vitalii Kotivskyi"
+  },
+  "skills": [
+    "./skills/engineering/pr-watch",
+    "./skills/engineering/plan",
+    "./skills/engineering/ship",
+    "./skills/misc/hello"
+  ]
+}

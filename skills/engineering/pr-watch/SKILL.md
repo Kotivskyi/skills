@@ -274,7 +274,7 @@ comment node IDs:
 PR_URL=$(gh pr view "$PR_NUMBER" --json url --jq .url)
 OWNER=$(echo "$PR_URL" | sed -E 's#https?://[^/]+/([^/]+)/([^/]+)/pull/[0-9]+#\1#')
 REPO=$(echo "$PR_URL" | sed -E 's#https?://[^/]+/([^/]+)/([^/]+)/pull/[0-9]+#\2#')
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_comments.py" --owner "$OWNER" --repo "$REPO" --number "$PR_NUMBER"
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/engineering/pr-watch/scripts/fetch_comments.py" --owner "$OWNER" --repo "$REPO" --number "$PR_NUMBER"
 ```
 
 A review thread lives on the **base** repository, so always fetch with the base

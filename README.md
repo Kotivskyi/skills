@@ -1,49 +1,48 @@
 # kotivskyi/skills
 
-A [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces)
-hosting Vitalii Kotivskyi's personal collection of plugins and skills.
+Vitalii Kotivskyi's [Claude Code](https://claude.ai/code) skills.
 
-## Add this marketplace
-
-```shell
-/plugin marketplace add kotivskyi/skills
-```
-
-## Install a plugin
+## Install
 
 ```shell
-/plugin install hello-world@kotivskyi-skills
+# As a Claude Code plugin (recommended)
+claude plugin install github:Kotivskyi/skills
+
+# Or symlink for local development
+bash scripts/link-skills.sh
 ```
 
-## Available plugins
+## Skills
 
-| Plugin | Description |
-| :----- | :---------- |
-| `hello-world` | A minimal example plugin with a single greeting skill. Use it as a template for new plugins. |
+### Model-invoked
 
-## Repository layout
+| Skill | Description |
+| :---- | :---------- |
+| [plan](./skills/engineering/plan/SKILL.md) | Break down a feature or task into an approved implementation plan before touching code. |
+| [pr-watch](./skills/engineering/pr-watch/SKILL.md) | Drive a GitHub PR to fully green checks and fully addressed review threads, or exit with a precise blocker. |
+| [ship](./skills/engineering/ship/SKILL.md) | Pre-merge go/no-go checklist: CI, reviews, migrations, env vars, secrets scan. |
+
+## Structure
 
 ```
-.
-├── .claude-plugin/
-│   └── marketplace.json        # marketplace catalog
-└── plugins/
-    └── hello-world/            # one directory per plugin
-        ├── .claude-plugin/
-        │   └── plugin.json     # plugin manifest
-        └── skills/
-            └── hello/
-                └── SKILL.md    # a skill
+skills/
+├── engineering/     # daily code and PR work
+├── misc/            # kept around, rarely used
+├── in-progress/     # drafts, not in plugin.json
+└── deprecated/      # no longer used
 ```
 
-## Add a new plugin
+See [CLAUDE.md](./CLAUDE.md) for governance rules (how to add, change, or remove skills).
 
-1. Create `plugins/<your-plugin>/` with a `.claude-plugin/plugin.json` manifest.
-2. Add skills under `plugins/<your-plugin>/skills/<skill>/SKILL.md` (and/or
-   commands, agents, hooks, MCP servers).
-3. Add an entry to the `plugins` array in `.claude-plugin/marketplace.json`
-   with `"source": "./plugins/<your-plugin>"`.
-4. Validate: `claude plugin validate .`
+## Versioning
+
+Changes are tracked with [Changesets](https://github.com/changesets/changesets). Before merging to `main`, run:
+
+```bash
+npm run changeset
+```
+
+The release workflow opens a version PR automatically.
 
 ## License
 
