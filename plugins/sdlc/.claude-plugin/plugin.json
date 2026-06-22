@@ -1,0 +1,9 @@
+{
+  "name": "sdlc",
+  "description": "Software development lifecycle skills: plan work, drive PRs to green, and ship safely.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Vitalii Kotivskyi"
+  },
+  "license": "MIT"
+}
