@@ -1,0 +1,9 @@
+{
+  "name": "hello-world",
+  "description": "A minimal example plugin with a single greeting skill. Use it as a template for new plugins.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Vitalii Kotivskyi"
+  },
+  "license": "MIT"
+}

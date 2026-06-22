@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "kotivskyi-skills",
+  "description": "Vitalii Kotivskyi's personal collection of Claude Code plugins and skills.",
+  "owner": {
+    "name": "Vitalii Kotivskyi",
+    "email": "kotivskiy.vitaliy@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "hello-world",
+      "source": "./plugins/hello-world",
+      "description": "A minimal example plugin with a single greeting skill. Use it as a template for new plugins.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Vitalii Kotivskyi"
+      },
+      "license": "MIT",
+      "category": "examples",
+      "keywords": ["example", "template", "starter"]
+    }
+  ]
+}
