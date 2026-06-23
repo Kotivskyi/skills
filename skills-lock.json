@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-self-harness": {
+      "source": "kotivskyi/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/agent-self-harness/SKILL.md",
+      "computedHash": "c5d4d785f28f318e5b7eb0269fabacf8978b0f2b180c11695478fa2c6d44b182"
+    },
+    "agent-weakness-miner": {
+      "source": "kotivskyi/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/agent-weakness-miner/SKILL.md",
+      "computedHash": "79487ff0df4db24e2632a8bd161726bfd5db9a3205b7a9f920afac6fd0937f8f"
+    }
+  }
+}

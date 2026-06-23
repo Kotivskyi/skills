@@ -1,0 +1,17 @@
+[
+  {
+    "traceId": "external:ambiguous-1",
+    "source": "external",
+    "scope": { "kind": "packet", "id": "ambiguous-1" },
+    "task": { "goal": "Improve a deployment note" },
+    "outcome": { "status": "unknown", "signals": ["incomplete_trace"] },
+    "timeline": [
+      { "timestamp": "2026-06-22T10:00:00.000Z", "actor": "assistant", "kind": "assistant_message", "summary": "Partial transcript says something failed, but no command or output is present" }
+    ],
+    "failures": [],
+    "userInterventions": [],
+    "artifacts": [],
+    "redactions": [{ "kind": "large_content", "count": 4 }],
+    "rawPointers": [{ "file": "ambiguous-export.json", "line": 1 }]
+  }
+]

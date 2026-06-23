@@ -1,0 +1,56 @@
+{
+  "skill_name": "agent-weakness-miner",
+  "evals": [
+    {
+      "id": 1,
+      "name": "recurring-tool-failure",
+      "prompt": "Use agent-weakness-miner on evals/fixtures/recurring-tool-failure.json. Produce weaknesses.json and weakness-review.md for Gate 1.",
+      "expected_output": "A weakness packet identifies repeated missing artifact verification across both traces, preserves affected trace ids, separates evidence from suspected mechanism, and proposes targeted eval ideas.",
+      "files": ["evals/fixtures/recurring-tool-failure.json"],
+      "expectations": [
+        "weaknesses.json contains at least one weakness packet",
+        "The packet includes affectedTraceIds for codex:verify-1 and claude-code:verify-2",
+        "The packet includes suspectedMechanism separate from evidence",
+        "The packet includes targetedEvalIdeas tied to missing verification",
+        "The Markdown review is compact enough for weakness selection"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "one-off-noise-rejected",
+      "prompt": "Use agent-weakness-miner on evals/fixtures/one-off-noise.json. Decide whether this supports a harness weakness.",
+      "expected_output": "No candidate fix is invented. The output explains that the single network timeout is one-off noise or low-confidence evidence.",
+      "files": ["evals/fixtures/one-off-noise.json"],
+      "expectations": [
+        "No high-confidence recurring weakness is reported",
+        "The output explicitly explains why the evidence is one-off noise",
+        "No candidate worktree, skill edit, or prompt edit is proposed as ready to implement"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "efficiency-only-classified",
+      "prompt": "Use agent-weakness-miner on evals/fixtures/efficiency-only.json. The tasks succeeded but used many tools and tokens.",
+      "expected_output": "The weakness is classified as efficiency-only. Correctness is not treated as a failure, and targeted eval ideas measure token/tool budget without overriding behavior quality.",
+      "files": ["evals/fixtures/efficiency-only.json"],
+      "expectations": [
+        "The weakness title or suspected mechanism makes clear this is efficiency-only",
+        "The output does not claim the tasks failed",
+        "targetedEvalIdeas include token or tool-count measurement",
+        "The ranking advice keeps behavior quality ahead of token savings"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "ambiguous-evidence-low-confidence",
+      "prompt": "Use agent-weakness-miner on evals/fixtures/ambiguous-evidence.json. The trace is incomplete and heavily redacted.",
+      "expected_output": "The miner asks for more traces or reports low confidence rather than inventing a harness weakness.",
+      "files": ["evals/fixtures/ambiguous-evidence.json"],
+      "expectations": [
+        "The output reports low confidence or asks for more trace evidence",
+        "No specific harness edit is recommended as safe",
+        "The review mentions redaction or incomplete evidence as a limitation"
+      ]
+    }
+  ]
+}

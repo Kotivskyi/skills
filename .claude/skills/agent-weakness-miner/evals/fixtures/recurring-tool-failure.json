@@ -1,0 +1,36 @@
+[
+  {
+    "traceId": "codex:verify-1",
+    "source": "codex",
+    "scope": { "kind": "session", "id": "verify-1" },
+    "task": { "goal": "Add HTML report generation and verify tests" },
+    "outcome": { "status": "failed", "signals": ["tool_or_test_failure", "missing_artifact", "user_intervention"] },
+    "timeline": [
+      { "timestamp": "2026-06-20T10:00:00.000Z", "actor": "user", "kind": "user_message", "summary": "Add HTML report generation and verify tests" },
+      { "timestamp": "2026-06-20T10:04:00.000Z", "actor": "assistant", "kind": "tool", "summary": "npm test failed: missing report.html" },
+      { "timestamp": "2026-06-20T10:06:00.000Z", "actor": "user", "kind": "user_message", "summary": "The artifact is missing; verify before finalizing" }
+    ],
+    "failures": [{ "summary": "npm test failed: missing report.html" }],
+    "userInterventions": [{ "summary": "The artifact is missing; verify before finalizing" }],
+    "artifacts": [{ "path": "report.md" }],
+    "redactions": [],
+    "rawPointers": [{ "file": "codex-1.jsonl", "line": 3 }]
+  },
+  {
+    "traceId": "claude-code:verify-2",
+    "source": "claude-code",
+    "scope": { "kind": "session", "id": "verify-2" },
+    "task": { "goal": "Create CSV exporter and verify output file" },
+    "outcome": { "status": "failed", "signals": ["tool_or_test_failure", "missing_artifact", "user_intervention"] },
+    "timeline": [
+      { "timestamp": "2026-06-21T09:00:00.000Z", "actor": "user", "kind": "user_message", "summary": "Create CSV exporter and verify output file" },
+      { "timestamp": "2026-06-21T09:04:00.000Z", "actor": "tool", "kind": "tool_result", "summary": "AssertionError: expected output.csv to exist" },
+      { "timestamp": "2026-06-21T09:06:00.000Z", "actor": "user", "kind": "user_message", "summary": "You skipped the artifact check; rerun verification" }
+    ],
+    "failures": [{ "summary": "AssertionError: expected output.csv to exist" }],
+    "userInterventions": [{ "summary": "You skipped the artifact check; rerun verification" }],
+    "artifacts": [],
+    "redactions": [],
+    "rawPointers": [{ "file": "claude-2.jsonl", "line": 4 }]
+  }
+]

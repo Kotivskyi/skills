@@ -1,0 +1,82 @@
+{
+  "skill_name": "agent-self-harness",
+  "evals": [
+    {
+      "id": 1,
+      "name": "missing-dependency-stops",
+      "prompt": "Run agent-self-harness on a provided trace packet, but agent-weakness-miner is not installed. What should happen?",
+      "expected_output": "The workflow stops before trace discovery or analysis and prints setup instructions for installing agent-weakness-miner from the same source package as agent-self-harness.",
+      "files": [],
+      "expectations": [
+        "The output names the missing dependency",
+        "The output says to stop before normalization or raw trace inspection",
+        "The output gives setup instructions",
+        "The output does not scaffold a replacement skill"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "source-selection-routes-codex-claude-explicit",
+      "prompt": "Use agent-self-harness to inspect execution history. The user has not said whether to use Codex sessions, Claude Code sessions, or an explicit packet file.",
+      "expected_output": "The skill asks for source and discovery mode, describing Codex local sessions, Claude Code local sessions, and explicit normalized packets as options.",
+      "files": [],
+      "expectations": [
+        "The output asks for source selection before inspecting history",
+        "Codex local session discovery is listed",
+        "Claude Code local session discovery is listed",
+        "Explicit normalized packets are listed"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "gate-one-blocks-candidate-work",
+      "prompt": "agent-weakness-miner returned three weakness packets. Continue the self-harness run.",
+      "expected_output": "The skill presents compact weakness packets and stops for the user to choose exactly one weakness before candidates, worktrees, eval edits, or file edits.",
+      "files": [],
+      "expectations": [
+        "The output presents weakness choices compactly",
+        "The output explicitly requests user selection",
+        "The output states no candidate work starts before selection",
+        "No candidate worktree or edit is proposed as already applied"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "candidate-ranking-quality-before-efficiency",
+      "prompt": "Two candidates passed targeted evals. Candidate A scores 92% with 120k tokens. Candidate B scores 86% with 40k tokens. Which wins?",
+      "expected_output": "Candidate A wins because behavior quality is not materially similar; token savings do not override a meaningful quality difference.",
+      "files": [],
+      "expectations": [
+        "The output chooses the higher-quality candidate",
+        "The output explains that efficiency is a tie-breaker only after material similarity",
+        "The output mentions token usage as secondary"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "no-safe-improvement",
+      "prompt": "All candidate changes either failed targeted evals or caused regression. Prepare the recommendation.",
+      "expected_output": "The skill reports no safe improvement found and does not recommend applying any candidate.",
+      "files": [],
+      "expectations": [
+        "The output says no safe improvement was found",
+        "The output summarizes failed candidates or regressions",
+        "The output does not force a winner"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "final-brief-decision-grade",
+      "prompt": "A best candidate was selected and it adds a helper script. Prepare Gate 2.",
+      "expected_output": "The final approval brief includes what improved, why the candidate won, eval results, token usage, runtime, risks, rollback, new script details, and an ASCII diagram if workflow or tooling changed.",
+      "files": [],
+      "expectations": [
+        "The brief asks for explicit approval before apply",
+        "The brief includes eval results and why the candidate won",
+        "The brief includes token usage and runtime",
+        "The brief documents the new script purpose, inputs, outputs, location, network or secrets needs",
+        "The brief includes rollback notes"
+      ]
+    }
+  ]
+}
