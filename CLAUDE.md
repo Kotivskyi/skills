@@ -19,19 +19,12 @@ Every `SKILL.md` is either user-invoked (`disable-model-invocation: true`, reach
 2. Add it to `.claude-plugin/plugin.json` under `skills`.
 3. Add it to the bucket `README.md` under the correct invocation heading.
 4. Add it to the top-level `README.md` under the correct invocation heading.
-5. Run `npm run changeset` and select `patch` (new skill) or `minor` (significant new capability).
 
-## Changing a skill
-
-- **Patch**: wording, clarity, fixing a bug in instructions.
-- **Minor**: meaningfully new behaviour or scope.
-- **Major**: breaking change to how the skill is invoked or what it produces.
-
-Run `npm run changeset` before merging any change to `main`.
+The patch version is bumped automatically when the PR merges to `main`.
 
 ## Removing a skill
 
-Move the directory to `skills/deprecated/`, remove it from `plugin.json` and both `README.md`s, and add a changeset.
+Move the directory to `skills/deprecated/` and remove it from `plugin.json` and both `README.md`s.
 
 ## Scripts
 
