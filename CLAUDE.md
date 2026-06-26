@@ -1,3 +1,5 @@
+#Branching policy: it's monobranch repo. We don't need PR's
+
 Skills are organized into bucket folders under `skills/`:
 
 - `engineering/` — daily code and PR work
