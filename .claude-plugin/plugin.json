@@ -9,6 +9,8 @@
     "./skills/engineering/pr-watch",
     "./skills/engineering/plan",
     "./skills/engineering/ship",
+    "./skills/engineering/handoff-to-paperclip",
+    "./skills/engineering/handoff",
     "./skills/misc/hello"
   ]
 }

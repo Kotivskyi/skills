@@ -16,10 +16,17 @@ claude plugin install github:Kotivskyi/skills
 
 ## Skills
 
+### User-invoked
+
+| Skill | Description |
+| :---- | :---------- |
+| [handoff](./skills/engineering/handoff/SKILL.md) | Compact the current conversation into a handoff document for another agent to pick up. |
+
 ### Model-invoked
 
 | Skill | Description |
 | :---- | :---------- |
+| [handoff-to-paperclip](./skills/engineering/handoff-to-paperclip/SKILL.md) | Hand off this session's in-progress work to the Paperclip agent team (CTO by default) — isolated worktree, context doc, and a real PR. |
 | [plan](./skills/engineering/plan/SKILL.md) | Break down a feature or task into an approved implementation plan before touching code. |
 | [pr-watch](./skills/engineering/pr-watch/SKILL.md) | Drive a GitHub PR to fully green checks and fully addressed review threads, or exit with a precise blocker. |
 | [ship](./skills/engineering/ship/SKILL.md) | Pre-merge go/no-go checklist: CI, reviews, migrations, env vars, secrets scan. |
