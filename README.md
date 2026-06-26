@@ -32,6 +32,7 @@ claude plugin install github:Kotivskyi/skills
 | [plan](./skills/engineering/plan/SKILL.md) | Break down a feature or task into an approved implementation plan before touching code. |
 | [pr-watch](./skills/engineering/pr-watch/SKILL.md) | Drive a GitHub PR to fully green checks and fully addressed review threads, or exit with a precise blocker. |
 | [ship](./skills/engineering/ship/SKILL.md) | Pre-merge go/no-go checklist: CI, reviews, migrations, env vars, secrets scan. |
+| [write-http-files](./skills/engineering/write-http-files/SKILL.md) | Author runnable `.http` / `.rest` request files (JetBrains HTTP Client / VS Code REST Client format) with variables, environments, and response chaining. |
 
 See [CLAUDE.md](./CLAUDE.md) for governance rules (how to add, change, or remove skills).
 
