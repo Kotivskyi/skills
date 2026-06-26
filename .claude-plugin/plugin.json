@@ -6,6 +6,8 @@
     "name": "Vitalii Kotivskyi"
   },
   "skills": [
+    "./skills/engineering/bdd-create",
+    "./skills/engineering/bdd-implement",
     "./skills/engineering/pr-watch",
     "./skills/engineering/plan",
     "./skills/engineering/ship",
