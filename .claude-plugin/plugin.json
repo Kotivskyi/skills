@@ -9,7 +9,6 @@
     "./skills/engineering/bdd-create",
     "./skills/engineering/bdd-implement",
     "./skills/engineering/diagnosing-bugs",
-    "./skills/engineering/fix",
     "./skills/engineering/fix-with-spec",
     "./skills/engineering/pr-watch",
     "./skills/engineering/plan",
