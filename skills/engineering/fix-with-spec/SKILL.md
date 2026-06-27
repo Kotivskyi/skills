@@ -98,6 +98,18 @@ answer + the capability; proceed unless it's genuinely ambiguous.
 | **Yes** | archived only — **+ an escalation trigger** | **Full new change** — run the schema's artifact flow to persist the audit trail (proportionately). |
 | **Net-new capability / broad contract change** | — | **Stop → `/opsx:propose`** — that's not a fix; say so in the plan instead of editing. |
 
+**Answer the spec-change question *before* the ownership question — and don't pollute an
+unrelated active change.** The "active change → surgical delta" row assumes the active
+change is the *natural home* for your fix. Often it isn't: a change can own a capability's
+spec while being about something entirely different (an `increment/archive` change that
+happens to own `pasture-management`), or the capability may have **no applied spec yet** —
+it exists only as that in-flight change's delta. Before reaching for surgical-delta,
+confirm your fix genuinely sits within that change's scope. If it doesn't, grafting your
+scenario onto it pollutes someone's in-flight work — prefer **No change** (when no spec
+actually asserts the behavior you're fixing), or defer a standalone change until the
+in-flight one lands. The point of asking "does a spec *say* this?" first is exactly to
+avoid being railroaded into editing the wrong change.
+
 **Escalate minimal → full only if a trigger applies (otherwise stay minimal):**
 - a real **bug / regression / incident** where persisting reproduce→test evidence + a
   named regression test matters (security, data integrity, a prod incident, a
