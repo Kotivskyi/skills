@@ -38,8 +38,8 @@ bespoke, area-aware schema with a custom sync helper.
 The invariant that constrains you in **every** OpenSpec repo: the applied specs under
 `openspec/specs/**` are a **generated mirror of change deltas** — never hand-edit them. A
 spec changes only by putting a delta inside a *change* and running that schema's apply
-step (plain `openspec archive`, or a schema-bundled sync helper + archive — the CLI tells
-you which; see below).
+step (plain `openspec archive`, or a schema-bundled sync helper + archive — the schema's
+`openspec schemas` description tells you which; see below).
 
 ## Hard dependencies — invoke, don't rebuild
 
@@ -176,19 +176,28 @@ the artifacts that carry real signal (e.g. an executed reproduce/test record for
 regression, a design note for a migration); skip artifacts that would say nothing. Even
 "full" stays proportionate.
 
-**Apply + archive (both paths) — let the CLI tell you the exact step:**
+**Apply + archive (both paths).** First validate the delta — note the `--type change`,
+without it `openspec validate <name>` resolves to a *spec* and errors `Unknown item`:
 ```
-openspec validate <change>                       # delta is well-formed
-openspec instructions apply --change <change>     # prints THIS schema's apply procedure
+openspec validate <change> --type change          # delta is well-formed
 ```
-Follow what `instructions apply` prints. For the stock `spec-driven` schema that's just
-`openspec archive -y <change>` (archive applies the spec delta to `openspec/specs/**`).
-For an area-aware schema with a bundled sync helper, it names the helper to run first,
-then `openspec archive -y --skip-specs <change>`. If `instructions apply` blocks on
-non-spec artifacts you intentionally skipped for a *minimal* fix, that schema is enforcing
-ceremony you don't need: apply just the spec delta — run the schema's sync helper if it
-has one (named in `openspec schemas`), then `openspec archive -y --skip-specs <change>`;
-otherwise `openspec archive -y <change>`.
+Then apply. **Pick the mechanism from the schema, not from `openspec instructions apply`** —
+for a minimal fix that command just reports `Blocked: missing artifacts …` and points at
+`openspec-continue-change`; it does *not* print the sync/archive recipe. Read the schema's
+description in `openspec schemas` (it says whether the schema mirrors nested specs via a
+bundled helper) and/or check for `openspec/schemas/<schema>/bin/` — that tells you which of
+these two verified recipes applies:
+
+- **Flat schema** (e.g. stock `spec-driven`): `openspec archive -y <change>` — archive
+  applies the `specs/<cap>/spec.md` delta straight into `openspec/specs/**`.
+- **Area-aware / nested schema with a bundled sync helper** (e.g. `superpowers-workspace`):
+  run the helper first, then archive skipping specs —
+  `node openspec/schemas/<schema>/bin/sync-nested-specs.mjs <change>` then
+  `openspec archive -y --skip-specs <change>`.
+
+Both archive forms apply the delta even though you deliberately skipped the schema's other
+artifacts — that's the minimal path working as intended, not a workaround. (These two
+recipes are verified against `spec-driven` and `superpowers-workspace`.)
 
 ## Rules that keep it honest (and fast)
 
@@ -209,5 +218,5 @@ otherwise `openspec archive -y <change>`.
 ## Delegates to (hard deps + helpers)
 `diagnosing-bugs` and `tdd` (the red→green), `/opsx:propose` (large work only — a
 hard handoff, not a fix), the OpenSpec CLI (`schemas` / `list` / `validate` /
-`instructions` / `archive` and any schema-bundled sync helper it names), and
+`instructions` / `archive` and any schema-bundled sync helper named in `openspec schemas`), and
 `finishing-a-development-branch` for the PR when one is wanted.
