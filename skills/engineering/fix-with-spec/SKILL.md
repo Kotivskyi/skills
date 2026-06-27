@@ -16,7 +16,7 @@ description: >-
   schema or a bespoke one. Always the lightest touch that fits — it never spawns OpenSpec
   ceremony that isn't warranted, because fix time matters. Gates every fix behind a lean,
   approvable plan (the change + the spec-consistency decision) in plan mode before
-  editing. Hard-depends on the project's `diagnosing-bugs`, `tdd-loop`, and
+  editing. Hard-depends on the project's `diagnosing-bugs`, `tdd`, and
   `/opsx:propose` skills — invoke them, don't reimplement them. NOT for pure diagnosis
   with no code change (use diagnosing-bugs alone), and NOT for net-new capabilities or
   large contract changes (use /opsx:propose).
@@ -43,17 +43,20 @@ you which; see below).
 
 ## Hard dependencies — invoke, don't rebuild
 
-This skill orchestrates three skills that must be installed in the project. When the flow
-reaches their job, **invoke them**; do not re-implement their logic inline.
+This skill orchestrates three skills. When the flow reaches their job, **invoke them**; do
+not re-implement their logic inline.
 
 - **`diagnosing-bugs`** — reproduce-and-locate for anything whose root cause isn't obvious.
-- **`tdd-loop`** — the red→green discipline for the actual fix (this is a TDD-default repo).
-- **`/opsx:propose`** — the OpenSpec proposal workflow for net-new capabilities or broad
-  contract changes. When the spec-path decision lands here, you **stop and hand off** to
-  it rather than treating the work as a fix.
+  Ships in this same plugin, so it travels with `/fix-with-spec` wherever it's installed.
+- **`tdd`** — the red→green discipline for the actual fix. Also bundled in this plugin.
+- **`/opsx:propose`** — the OpenSpec project's own proposal workflow, for net-new
+  capabilities or broad contract changes. This one is **not** bundled — it belongs to the
+  OpenSpec-managed repo. When the spec-path decision lands here, you **stop and hand off**
+  to it rather than treating the work as a fix.
 
-If one of these isn't present in the repo, say so in the plan instead of silently doing
-its job by hand — the missing skill changes the risk picture the user is approving.
+If one of these isn't present in the session, say so in the plan instead of silently doing
+its job by hand — a missing skill changes the risk picture the user is approving. (The
+likely gap is `/opsx:propose`, since the bundled two travel with this skill.)
 
 ## The gate: plan before you touch code
 
@@ -131,7 +134,7 @@ doubt, the project default (`openspec/config.yaml`) is the safe choice.
 
 ## After approval: implement
 
-1. **Fix the code.** Prove it works with a proportionate red→green check via **`tdd-loop`**
+1. **Fix the code.** Prove it works with a proportionate red→green check via **`tdd`**
    (a failing→passing test or repro for anything non-trivial), reaching for
    **`diagnosing-bugs`** when the cause was unclear. Don't over-test a one-liner.
 
@@ -192,7 +195,7 @@ otherwise `openspec archive -y <change>`.
   specific project.
 
 ## Delegates to (hard deps + helpers)
-`diagnosing-bugs` and `tdd-loop` (the red→green), `/opsx:propose` (large work only — a
+`diagnosing-bugs` and `tdd` (the red→green), `/opsx:propose` (large work only — a
 hard handoff, not a fix), the OpenSpec CLI (`schemas` / `list` / `validate` /
 `instructions` / `archive` and any schema-bundled sync helper it names), and
 `finishing-a-development-branch` for the PR when one is wanted.
