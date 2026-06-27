@@ -8,6 +8,8 @@
   "skills": [
     "./skills/engineering/bdd-create",
     "./skills/engineering/bdd-implement",
+    "./skills/engineering/fix",
+    "./skills/engineering/fix-with-spec",
     "./skills/engineering/pr-watch",
     "./skills/engineering/plan",
     "./skills/engineering/ship",

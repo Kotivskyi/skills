@@ -14,6 +14,8 @@ Daily code and PR work.
 | :---- | :---------- |
 | [bdd-create](./bdd-create/SKILL.md) | Author BDD scenarios and acceptance criteria (Given-When-Then) — the specification side, no implementation. |
 | [bdd-implement](./bdd-implement/SKILL.md) | Turn BDD scenarios into executable tests — step definitions and Cucumber/Jest/Playwright glue via TDD. |
+| [fix](./fix/SKILL.md) | Fix a bug or adjust behavior fast while keeping its OpenSpec capability spec consistent — gated behind a lean, approvable plan. |
+| [fix-with-spec](./fix-with-spec/SKILL.md) | Repo-agnostic version of `fix`: keeps OpenSpec specs consistent under any schema by discovering schemas/apply steps from the OpenSpec CLI; hard-depends on `diagnosing-bugs`, `tdd-loop`, `/opsx:propose`. |
 | [handoff-to-paperclip](./handoff-to-paperclip/SKILL.md) | Hand off this session's in-progress work to the Paperclip agent team (CTO by default) — isolated worktree, context doc, and a real PR. |
 | [plan](./plan/SKILL.md) | Break down a feature or task into an approved implementation plan before touching code. |
 | [pr-watch](./pr-watch/SKILL.md) | Drive a GitHub PR to fully green checks and fully addressed review threads, or exit with a precise blocker. |
