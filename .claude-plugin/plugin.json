@@ -8,6 +8,7 @@
   "skills": [
     "./skills/engineering/bdd-create",
     "./skills/engineering/bdd-implement",
+    "./skills/engineering/decision-auto-tracker",
     "./skills/engineering/diagnosing-bugs",
     "./skills/engineering/fix-with-spec",
     "./skills/engineering/pr-watch",
