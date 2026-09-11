@@ -1,12 +1,17 @@
 ---
 name: code-writer
-description: "Use Pi to generate code from reference files, including tests, configuration, documentation, and type stubs with established patterns."
+description: "Delegate complete-file generation to Pi when source and reference files define the result: tests, configuration, documentation, or type stubs. Load before drafting the file, including test backfills and regenerated files. Keep design choices and small exact edits with the parent."
 ---
 <!-- Modified from Spotify Shunt: use Pi with multiple references and controlled target writes. See ../../NOTICE. -->
 
-Use this skill when a spec and reference files can define the result. Keep design decisions and exact edits with the parent agent.
+Use Pi to draft a complete file when a spec and reference files define the result. This includes test backfills and regenerated files.
+Delegate before writing the file content in the parent. Keep design decisions and small exact edits with the parent agent.
+Bulk-reader supplies drafts for source-analysis reports. The parent may save and review those answers without another code-writer call.
 
 Pass source files that define behavior and reference files that show the required patterns. At least one reference is required.
+
+For tests, derive expectations for each exported function. Do not limit a general helper’s positive cases to values used by one caller. Include this contract coverage in the spec and review.
+For fallback logic, include a nonmatching primary value with a matching fallback. Check branch combinations, not only isolated inputs.
 
 ```bash
 "${CLAUDE_PLUGIN_ROOT}/scripts/code-write.sh" \

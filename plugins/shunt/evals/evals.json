@@ -1,38 +1,80 @@
 {
   "skill_name": "shunt",
-  "description": "End-to-end skill evals — test whether Claude uses the shunt scripts correctly",
+  "description": "Live parent-agent evaluations on a local Pastorix backend checkout. Copy source into isolated run folders; keep source and traces outside this repository.",
+  "files": [
+    "apps/core/src/modules/device-fleet/pg-errors.ts",
+    "apps/core/src/modules/device-fleet/device-link.service.ts",
+    "apps/core/src/modules/device-fleet/device-link.service.spec.ts",
+    "apps/core/src/modules/cows/cow-registry.service.ts",
+    "apps/core/src/modules/cows/cow-registry.service.spec.ts"
+  ],
   "evals": [
     {
-      "id": 1,
-      "prompt": "What are all the exported items in evals/fixtures/websocket-handler.ts and what do they do?",
-      "expected_output": "Claude should be blocked by the hook (602 lines), then invoke bulk-read.sh script",
-      "files": ["evals/fixtures/websocket-handler.ts"],
+      "id": "bulk-cross-file",
+      "prompt": "Review PostgreSQL error handling in pg-errors.ts, DeviceLinkService, and CowRegistryService. Explain both helper functions, the cause-depth limit, and what each caller does when it recognizes an error. Distinguish conflict responses, race recovery, cleanup, and errors that propagate. Describe the code as it exists. Support claims with file and function names. Save a concise report to analysis.md. Use short sentences and active voice.",
+      "output": "analysis.md",
+      "grader": "review",
       "expectations": [
-        "Claude ran ${CLAUDE_PLUGIN_ROOT}/scripts/bulk-read.sh with --question and --paths",
-        "Claude did NOT read the full file directly",
-        "Claude provided a summary based on the bulk-read.sh output"
+        "The parent uses Pi bulk reading for the cross-file analysis. It does not bypass a blocked large read.",
+        "The answer explains non-null object checks, code-property presence, and strict comparison with the supplied code.",
+        "The answer distinguishes direct unique violations from one-level causes. It does not claim recursive cause search.",
+        "The answer covers recognized errors at the DeviceLinkService write sites and separates unrelated errors.",
+        "The answer distinguishes CowRegistryService race recovery from link conflict cleanup and response mapping.",
+        "The answer grounds each caller claim in a file and function. It does not infer transaction guarantees."
       ]
     },
     {
-      "id": 2,
-      "prompt": "Write unit tests for UserService following the pattern in order-service.test.ts.",
-      "expected_output": "Claude should invoke code-write.sh script with --spec, --reference, and --target",
-      "files": ["evals/fixtures/user-service.ts", "evals/fixtures/order-service.test.ts"],
+      "id": "generate-tests",
+      "prompt": "Add a regression test file for apps/core/src/modules/device-fleet/pg-errors.ts. Use the existing device-link.service.spec.ts and cow-registry.service.spec.ts as test-pattern references. Cover the helper's public behavior and input boundaries. Import only the two helper functions from ./pg-errors; Jest globals are available. Do not use services, database clients, network calls, mocks, snapshots, or new dependencies. Save the complete test file to apps/core/src/modules/device-fleet/pg-errors.spec.ts. Review it and run the focused Jest check. Use short, active test names and comments.",
+      "output": "apps/core/src/modules/device-fleet/pg-errors.spec.ts",
+      "grader": "pg-tests",
       "expectations": [
-        "Claude ran ${CLAUDE_PLUGIN_ROOT}/scripts/code-write.sh with --spec and --reference",
-        "Output was written to a target file via --target",
-        "Claude reviewed the generated output before accepting it"
+        "The parent delegates the test file to Pi code-writer with the helper, useful pattern references, and task constraints.",
+        "The parent reviews the generated file and runs the focused check before accepting it.",
+        "The generated tests pass with TypeScript diagnostics enabled and have no skipped or empty tests.",
+        "The tests detect all six declared behavior faults through failed assertions.",
+        "The parent changes only the requested test file."
       ]
     },
     {
-      "id": 3,
-      "prompt": "There's a bug on line 42 of websocket-handler.ts where the heartbeat interval isn't cleared on disconnect. Fix it.",
-      "expected_output": "Claude should NOT delegate — debugging requires reasoning, not bulk I/O",
-      "files": ["evals/fixtures/websocket-handler.ts"],
+      "id": "follow-up",
+      "prompt": "Extend the existing apps/core/src/modules/device-fleet/pg-errors.spec.ts with missing regression tests for pg-errors.ts. Keep the current test block unchanged. Cover public behavior and input boundaries, using the supplied service tests as patterns. Import only the helper functions; Jest globals are available. Do not add mocks, snapshots, services, network calls, or dependencies. Save one complete test file at the same path. Review the changes and run the focused Jest check. Use short, active test names and comments.",
+      "output": "apps/core/src/modules/device-fleet/pg-errors.spec.ts",
+      "grader": "pg-tests",
+      "seed": "import { hasPgCode, isUniqueViolation } from \"./pg-errors\";\n\ndescribe(\"Existing PostgreSQL error checks\", () => {\n  it(\"recognizes a direct unique violation\", () => {\n    expect(isUniqueViolation({ code: \"23505\" })).toBe(true);\n  });\n});\n",
       "expectations": [
-        "Claude did NOT run bulk-read.sh or code-write.sh",
-        "Claude read the file with offset/limit for the relevant section",
-        "Claude applied reasoning to the debugging task"
+        "The parent uses Pi code-writer and includes the current test file as a reference.",
+        "The same file can serve as a reference and target. The existing test block remains unchanged.",
+        "The parent reviews the result and runs the focused check.",
+        "The expanded tests pass and detect all six behavior faults through failed assertions.",
+        "The parent changes only the requested test file."
+      ]
+    },
+    {
+      "id": "missing-context",
+      "prompt": "Using the supplied files, determine which PostgreSQL server version production runs and whether a database constraint prevents every cross-tenant RFID conflict. Distinguish facts proved by this source from missing deployment or schema evidence. Save your answer to missing-context.md. Use short sentences and active voice. Do not inspect other repositories or use the network.",
+      "output": "missing-context.md",
+      "grader": "review",
+      "expectations": [
+        "The parent uses Pi bulk reading for the question across the supplied files.",
+        "The answer states that these files do not establish the deployed PostgreSQL version.",
+        "The answer does not claim that catching an error proves a deployed database constraint or a complete cross-tenant guarantee.",
+        "The answer identifies the missing deployment and schema evidence without inventing values.",
+        "The parent does not retrieve files outside the supplied workspace or use a network tool.",
+        "The answer preserves caller-specific outcomes, including successful race recovery. It does not add claims about absent implementations, schema types, or database comparisons."
+      ]
+    },
+    {
+      "id": "comparison-transfer",
+      "prompt": "Compare the identifier checks in DeviceLinkService.link and CowRegistryService.register. Explain how link treats an existing RFID holder, pending completion, and force. Explain how register compares raw and normalized cow identifiers with RFID. State the actual conditions and their effects. Save a concise source-grounded report to identifier-checks.md. Use short sentences and active voice.",
+      "output": "identifier-checks.md",
+      "grader": "review",
+      "expectations": [
+        "The parent delegates the cross-file question to Pi before broad content reads or searches.",
+        "The report distinguishes holder.devEui from devEuiLc and holder.tenantId from tenantId. It correctly explains pending completion and why force cannot move RFID across tenants.",
+        "The report distinguishes cowEidRaw from governmentEid and compares each with rfid at the correct stage. It preserves both operands and each operator.",
+        "The report grounds claims in the supplied code, distinguishes comments from missing implementation guarantees, and uses relevant report checks without running Jest on Markdown.",
+        "The parent changes only the requested report and leaves source files unchanged."
       ]
     }
   ]

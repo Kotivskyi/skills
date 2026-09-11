@@ -5,7 +5,8 @@
 # Usage:
 #   bash evals/run.sh              # hooks and transport (no model calls)
 #   bash evals/run.sh --benchmark  # also measure parent context (requires Pi auth)
-#   bash evals/run.sh --all        # every eval suite
+#   bash evals/run.sh --all        # offline checks and token benchmarks
+# Real-world behavior: node evals/real-world.mjs --repo /path/to/pastorix-backend
 
 set -euo pipefail
 

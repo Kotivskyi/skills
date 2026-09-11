@@ -9,7 +9,7 @@ Shunt keeps large source files and generated code out of the parent agent's cont
 
 The plugin keeps three layers from [Spotify Shunt](https://github.com/spotify/portal-ai-plugins/tree/main/plugins/shunt):
 
-1. Hooks block large file reads and direct Claude to the bulk-reader skill.
+1. Hooks load worker routing at session start and block large file reads.
 2. Bash scripts send files and instructions to Pi, then check the response with `jq`.
 3. Skills explain when and how to call the scripts.
 
@@ -19,6 +19,9 @@ The public scripts share argument handling, prompt preparation, and Pi calls in 
 That helper also checks responses, applies the timeout, and cleans up worker processes. Shunt does not require Python.
 
 The bulk reader returns an answer. The code writer returns code or writes it to `--target`. The wrapper writes the target only after Pi returns a successful, complete response. Pi does not edit the project directly.
+
+The worker prompts require source evidence, exact comparison operands, and contract coverage for generated tests.
+The parent reviews the result and checks the relevant source or tests.
 
 ## Setup
 
@@ -40,6 +43,15 @@ claude plugin install shunt@kotivskyi-skills
 ```
 
 Restart Claude Code after installation. See the [Claude Code installation guide](https://code.claude.com/docs/en/discover-plugins).
+
+To apply a new Shunt release to an installed copy:
+
+```bash
+claude plugin marketplace update kotivskyi-skills
+claude plugin update shunt@kotivskyi-skills
+```
+
+Restart Claude Code to load the updated hooks and skills. See the [plugin CLI reference](https://code.claude.com/docs/en/plugins-reference).
 
 For local development and direct settings edits, load Shunt from a repository clone:
 
@@ -105,13 +117,17 @@ The worker does not load `AGENTS.md`, `CLAUDE.md`, or `APPEND_SYSTEM.md` automat
 
 ## Hooks
 
+`session-start.sh` adds worker routing at startup, resume, clear, compaction, and fork.
+It directs broad analysis and complete-file generation to their skills before content work starts.
+
 `check-file-size.sh` runs before each `Read` call. It blocks full reads of files above `SHUNT_MIN_LINES`, which defaults to 350. It allows reads with an offset or limit, smaller files, and nonexistent files.
 
 `check-bash-read.sh` runs before each `Bash` call. It checks simple reads with `cat`, `head`, `tail`, `less`, and `more`. It allows commands containing `|` or `>`, and other commands. Its inherited parser can block `head -5` on a large file. Use `Read` with an offset or limit for focused reads. The hook does not enforce every possible shell read.
 
 Use bulk reading for summaries and questions across large files. Keep design decisions, debugging, and exact edits with the parent agent. Use focused reads when it needs exact source text.
 
-The code-writer skill suggests delegation for generation based on reference files. No hook requires code generation to use Pi.
+The session hook and code-writer skill direct complete-file generation to Pi.
+No `PreToolUse` hook enforces code generation delegation.
 
 ## Configuration
 
@@ -168,6 +184,7 @@ shunt/
 ├── .pi/settings.json
 ├── hooks/
 │   ├── hooks.json
+│   ├── session-start.sh
 │   ├── check-file-size.sh
 │   └── check-bash-read.sh
 ├── scripts/
@@ -180,6 +197,9 @@ shunt/
 ├── evals/
 │   ├── run.sh
 │   ├── transport-evals.sh
+│   ├── real-world.mjs
+│   ├── grade-pg-tests.mjs
+│   ├── evals.json
 │   └── benchmark.sh
 ├── LICENSE
 └── NOTICE
@@ -192,6 +212,45 @@ Run the hook and transport checks from the repository root. These checks do not 
 ```bash
 bash plugins/shunt/evals/run.sh
 ```
+
+Run the real-world cases against a local Pastorix backend checkout with installed dependencies:
+
+```bash
+node plugins/shunt/evals/real-world.mjs \
+  --repo /path/to/pastorix-backend \
+  --case generate-tests
+```
+
+These cases require Node.js, an authenticated Claude CLI, and an authenticated Pi CLI.
+They use live models. The runner copies selected source files into a temporary workspace and saves its output there.
+It copies the plugin for the run and records source hashes, Pi settings, Claude usage, and the model trace.
+The source checkout stays outside the evaluation workspace. Its installed dependencies supply Jest and TypeScript.
+
+| Case | Check |
+| --- | --- |
+| `bulk-cross-file` | Ground the error-handling report in the helper and its real callers. |
+| `generate-tests` | Generate passing tests that detect six deliberate faults. |
+| `follow-up` | Extend the same test file and keep its existing test block. |
+| `missing-context` | Identify missing deployment and schema evidence without inventing values. |
+| `comparison-transfer` | Preserve comparison operands when explaining identifier checks in real callers. |
+
+Omit `--case` to run all five cases. Use `--plugin` to test a candidate plugin and `--out` to select a new output directory.
+Each case has a 300-second parent timeout and a USD 1.50 Claude budget by default.
+Set `--timeout-seconds` or `--budget-usd` to change these limits. The Claude budget does not include Pi calls.
+
+The test grader requires passing TypeScript checks, active assertions, and six faults caught through failed assertions.
+Compilation failures and runtime errors do not count as caught faults.
+The runner marks successful live cases as `review_required`.
+An independent reviewer must check the saved answer and trace against `evals/evals.json`.
+The test grader records its result separately. Passing generated tests alone do not prove correct delegation or parent review.
+These focused checks do not replace the backend's full repository checks.
+
+For an improvement loop, keep source hashes and model settings the same between baseline and candidate runs.
+Change one skill or prompt mechanism supported by a recorded failure. Repeat the affected case, then run the reserved cases.
+Keep a candidate only when outcomes improve and the offline checks still pass. Stop when no useful correction is supported.
+Keep source copies, traces, and raw results outside this repository.
+
+See the [live evaluation record](evals/results-2026-09-11.md) for measured changes, earlier failures, and follow-up checks.
 
 To run benchmarks with your configured Pi model:
 

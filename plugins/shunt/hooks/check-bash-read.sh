@@ -35,7 +35,7 @@ fi
 
 lines=$(wc -l < "$file_path" 2>/dev/null | tr -d ' ' || echo "0")
 if [ "$lines" -gt "$MIN_LINES" ]; then
-  jq -n --arg reason "File is ${lines} lines (threshold: ${MIN_LINES}). Use /shunt:bulk-reader to delegate this read to Pi. For exact content, use Read with offset or limit." '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $reason}}'
+  jq -n --arg reason "File is ${lines} lines (threshold: ${MIN_LINES}). For summaries, source surveys, or cross-file questions, invoke Skill shunt:bulk-reader and use its Pi script. Do not reconstruct this full file with chunks or Bash commands. Use focused reads for exact edits, debugging, or checking a specific claim." '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $reason}}'
 else
   echo '{}'
 fi

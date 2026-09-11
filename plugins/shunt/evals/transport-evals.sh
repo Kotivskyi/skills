@@ -1,8 +1,8 @@
 #!/bin/bash
 # Black-box Bash + jq checks. No Pi account, model, network, or Python is used.
 set -uo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/shunt-evals.XXXXXX")
 trap 'rm -rf "$WORKDIR"' EXIT
 mkdir "$WORKDIR/bin"
@@ -310,6 +310,15 @@ test_argument_compatibility() {
 }
 test_timeout() {
   config_patch '.spawn_child=true | .delay=5'
+  # Start the short watchdog after the fixture creates the child under test.
+  # The outer guard still bounds fixture startup and this readiness wait.
+  sleep() {
+    if [ "$1" = 0.3 ]; then
+      until [ -s "$FAKE_PI_CAPTURE.child.pid" ]; do command sleep 0.01; done
+    fi
+    command sleep "$@"
+  }
+  export -f sleep
   SHUNT_TIMEOUT_SECONDS=0.3 writer --target "$TARGET"
   unchanged; assert grep -Eiq 'timed out|timeout' "$ERR"
   assert test -s "$FAKE_PI_CAPTURE.child.pid"

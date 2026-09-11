@@ -1,6 +1,6 @@
 {
   "name": "shunt",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Uses the Pi CLI for bulk file reading and code generation. Hooks route large reads to workers and reduce parent context use.",
   "author": {
     "name": "Spotify"
