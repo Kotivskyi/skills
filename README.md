@@ -40,6 +40,13 @@ claude plugin install github:Kotivskyi/skills
 
 See [CLAUDE.md](./CLAUDE.md) for governance rules (how to add, change, or remove skills).
 
+## Plugins
+
+- [Shunt for Pi](./plugins/shunt/README.md) uses Pi for bulk file reads and code generation. It keeps Spotify Shunt's hooks, scripts, and skills.
+
+Load it in a Claude Code session with `claude --plugin-dir ./plugins/shunt`.
+Edit [Pi settings](./plugins/shunt/.pi/settings.json) to select the provider, model, and thinking level for both workers.
+
 ## License
 
-MIT
+MIT. The [Shunt plugin](./plugins/shunt/LICENSE) uses Apache-2.0.

@@ -1,0 +1,29 @@
+Shunt for Pi
+
+Adapted from Spotify Shunt in spotify/portal-ai-plugins.
+Original author: Spotify.
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+Source: https://github.com/spotify/portal-ai-plugins/tree/main/plugins/shunt
+Source commit: 3c24ca30ff63e1f5bbad1c43fe5324daff579123
+
+This adaptation replaces the original worker service with the open source Pi CLI.
+The Claude Code plugin name and its hook, script, and skill design are retained.
+
+Modified files include the plugin manifest, README, hook messages, worker scripts,
+shared transport, skills, and evaluation runner. They add Pi configuration,
+stdin prompts, checked JSON responses, controlled target writes, multiple
+reference files, and Pi transport checks. Original service setup and benchmark
+claims were removed from the adapted documentation.
+
+The worker and hook shell scripts use .sh file extensions.
+
+The workers and benchmark use native Bash and jq. The shared Bash helper
+checks Pi responses and cleans up worker processes. No Python runtime is needed.
+
+The plugin also supplies native Pi settings in .pi/settings.json. Worker
+processes load these settings from the plugin directory. Caller file paths
+and the existing global Pi authentication directory keep their meaning.
+
+Spotify is the original author. This Pi adaptation is not an official Spotify
+release. The manifest retains the original author and source repository.
