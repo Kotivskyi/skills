@@ -15,7 +15,8 @@ The plugin keeps three layers from [Spotify Shunt](https://github.com/spotify/po
 
 Each script starts one Pi process in JSON mode. It sends the prompt through stdin and does not save a session. The worker cannot use tools, extensions, skills, prompt templates, or automatic project instruction files. It can use only the files and instructions in the request.
 
-The public scripts share argument handling, prompt preparation, and Pi calls in `scripts/lib/pi.sh`. That helper checks responses and cleans up worker processes. Shunt does not require Python.
+The public scripts share argument handling, prompt preparation, and Pi calls in [`scripts/lib/pi.sh`](scripts/lib/pi.sh).
+That helper also checks responses, applies the timeout, and cleans up worker processes. Shunt does not require Python.
 
 The bulk reader returns an answer. The code writer returns code or writes it to `--target`. The wrapper writes the target only after Pi returns a successful, complete response. Pi does not edit the project directly.
 
@@ -31,17 +32,36 @@ Start `pi`. Use `/login` to select and authenticate a provider. Select the worke
 
 Shunt loads its own [Pi settings file](.pi/settings.json) for both workers. It requires Pi support for `--approve` and `--no-context-files`. This version was tested with Pi `0.84.2`.
 
-Load the plugin for a local Claude Code session. Run this command from the repository root:
+Add the repository marketplace and install Shunt:
+
+```bash
+claude plugin marketplace add Kotivskyi/skills
+claude plugin install shunt@kotivskyi-skills
+```
+
+Restart Claude Code after installation. See the [Claude Code installation guide](https://code.claude.com/docs/en/discover-plugins).
+
+For local development and direct settings edits, load Shunt from a repository clone:
 
 ```bash
 claude --plugin-dir ./plugins/shunt
 ```
 
-This loads the plugin for that session. For another project, pass the absolute plugin path. See the [Claude Code plugin guide](https://code.claude.com/docs/en/plugins) for plugin installation.
+Run this command from the repository root. It loads the plugin for that session.
+For another project, pass the absolute plugin path.
 
 ## Scripts
 
 These examples start from the repository root. Plugin skills use `${CLAUDE_PLUGIN_ROOT}` to locate the scripts.
+
+| Script | Required options | Optional options | Result |
+| --- | --- | --- | --- |
+| [`bulk-read.sh`](scripts/bulk-read.sh) | `--question`, `--paths` | None | Answer on stdout. |
+| [`code-write.sh`](scripts/code-write.sh) | `--spec`, `--reference` | `--target` | Code on stdout, or one complete target file. |
+
+Both file options accept one or more paths. Repeated file options append paths in order.
+Repeated question, spec, or target options use the last value. Quote paths that contain spaces.
+Errors, token estimates, and target-write reports use stderr.
 
 ### Bulk read
 
@@ -79,13 +99,15 @@ plugins/shunt/scripts/code-write.sh \
 
 Omit `--target` to return code on stdout. Check generated code and run the relevant project checks.
 
+`--target` replaces one complete file. Its parent directory must exist. The script rejects symbolic links.
+
 The worker does not load `AGENTS.md`, `CLAUDE.md`, or `APPEND_SYSTEM.md` automatically. Include relevant constraints in the question or spec. Include source interfaces and pattern files when the worker needs them.
 
 ## Hooks
 
 `check-file-size.sh` runs before each `Read` call. It blocks full reads of files above `SHUNT_MIN_LINES`, which defaults to 350. It allows reads with an offset or limit, smaller files, and nonexistent files.
 
-`check-bash-read.sh` runs before each `Bash` call. It checks simple reads with `cat`, `head`, `tail`, `less`, and `more`. It allows pipes, redirections, and other commands. Its inherited parser can block `head -5` on a large file. Use `Read` with an offset or limit for focused reads. The hook does not enforce every possible shell read.
+`check-bash-read.sh` runs before each `Bash` call. It checks simple reads with `cat`, `head`, `tail`, `less`, and `more`. It allows commands containing `|` or `>`, and other commands. Its inherited parser can block `head -5` on a large file. Use `Read` with an offset or limit for focused reads. The hook does not enforce every possible shell read.
 
 Use bulk reading for summaries and questions across large files. Keep design decisions, debugging, and exact edits with the parent agent. Use focused reads when it needs exact source text.
 
@@ -93,7 +115,12 @@ The code-writer skill suggests delegation for generation based on reference file
 
 ## Configuration
 
-Edit [`plugins/shunt/.pi/settings.json`](.pi/settings.json) to control Pi. Both workers read this native Pi settings file on each call. The initial values match the model policy used in `pastorix-backend`:
+Edit [`.pi/settings.json`](.pi/settings.json) in the loaded plugin directory to control Pi. Both workers read this file on each call.
+When you use `--plugin-dir`, this is `plugins/shunt/.pi/settings.json` in your clone.
+Marketplace installs use a cached plugin copy. Changes in your clone do not change that installed copy.
+Use the environment overrides below for temporary changes to an installed plugin.
+
+The initial settings are:
 
 ```json
 {
@@ -152,6 +179,7 @@ shunt/
 │   └── code-writer/SKILL.md
 ├── evals/
 │   ├── run.sh
+│   ├── transport-evals.sh
 │   └── benchmark.sh
 ├── LICENSE
 └── NOTICE

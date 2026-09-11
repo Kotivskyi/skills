@@ -1,17 +1,22 @@
 # kotivskyi/skills
 
-Vitalii Kotivskyi's [Claude Code](https://claude.ai/code) skills.
+Vitalii Kotivskyi's skills and plugins for [Claude Code](https://claude.ai/code).
 
 ## Install
 
+Add this repository as a Claude Code marketplace, then install the skills plugin:
+
 ```shell
-npx skills@latest add kotivskyi/skills
+claude plugin marketplace add Kotivskyi/skills
+claude plugin install kotivskyi-skills@kotivskyi-skills
 ```
 
-Or directly via the Claude Code CLI:
+Restart Claude Code after installation. See the [Claude Code installation guide](https://code.claude.com/docs/en/discover-plugins).
+
+To install individual skills with the skills CLI:
 
 ```shell
-claude plugin install github:Kotivskyi/skills
+npx skills@latest add kotivskyi/skills
 ```
 
 ## Skills
@@ -42,9 +47,24 @@ See [CLAUDE.md](./CLAUDE.md) for governance rules (how to add, change, or remove
 
 ## Plugins
 
-- [Shunt for Pi](./plugins/shunt/README.md) uses Pi for bulk file reads and code generation. It keeps Spotify Shunt's hooks, scripts, and skills.
+[Shunt for Pi](./plugins/shunt/README.md) uses the Pi CLI for bulk file reads and code generation.
+It keeps Spotify Shunt's hooks and skills, with Bash scripts and a shared helper. Python is not required.
 
-Load it in a Claude Code session with `claude --plugin-dir ./plugins/shunt`.
+After adding the marketplace above, install Shunt:
+
+```shell
+claude plugin install shunt@kotivskyi-skills
+```
+
+Shunt requires Bash 3.2 or later, `jq`, and an authenticated Pi CLI.
+See its [setup instructions](./plugins/shunt/README.md#setup) and [configuration reference](./plugins/shunt/README.md#configuration).
+
+For local development, run this command from a clone of this repository:
+
+```shell
+claude --plugin-dir ./plugins/shunt
+```
+
 Edit [Pi settings](./plugins/shunt/.pi/settings.json) to select the provider, model, and thinking level for both workers.
 
 ## License

@@ -1,0 +1,19 @@
+{
+  "name": "kotivskyi-skills",
+  "description": "Claude Code skills and the Shunt plugin for Pi.",
+  "owner": {
+    "name": "Vitalii Kotivskyi"
+  },
+  "plugins": [
+    {
+      "name": "kotivskyi-skills",
+      "source": "./",
+      "description": "Skills for planning, implementation, review, and delivery in Claude Code."
+    },
+    {
+      "name": "shunt",
+      "source": "./plugins/shunt",
+      "description": "Uses the Pi CLI for bulk file reads and code generation, with configurable Pi settings."
+    }
+  ]
+}
