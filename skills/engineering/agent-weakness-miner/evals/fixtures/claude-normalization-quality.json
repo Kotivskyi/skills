@@ -1,0 +1,64 @@
+[
+  {
+    "traceId": "claude-code:command-goal",
+    "source": "claude-code",
+    "scope": { "kind": "session", "id": "command-goal" },
+    "task": {
+      "goal": "12420542-ae90-4e22-a27c-464e60330d1e acfa42d8-cf8c-4639-b3e7-856564877719 user user <command-message>skill-creator:skill-creator</command-message>"
+    },
+    "outcome": { "status": "failed", "signals": ["tool_or_test_failure"] },
+    "timeline": [
+      {
+        "timestamp": null,
+        "actor": "last-prompt",
+        "kind": "last-prompt",
+        "summary": "Metadata snapshot without an event timestamp"
+      },
+      {
+        "timestamp": null,
+        "actor": "mode",
+        "kind": "mode",
+        "summary": "Mode metadata without an event timestamp"
+      },
+      {
+        "timestamp": null,
+        "actor": "assistant",
+        "kind": "tool",
+        "summary": "Bash command failed with exit code 1"
+      }
+    ],
+    "failures": [
+      { "timestamp": null, "summary": "Bash command failed with exit code 1" }
+    ],
+    "userInterventions": [],
+    "artifacts": [],
+    "redactions": [],
+    "rawPointers": []
+  },
+  {
+    "traceId": "claude-code:clear-goal",
+    "source": "claude-code",
+    "scope": { "kind": "session", "id": "clear-goal" },
+    "task": { "goal": "Refactor the payment settings screen" },
+    "outcome": { "status": "succeeded", "signals": [] },
+    "timeline": [
+      {
+        "timestamp": null,
+        "actor": "permission-mode",
+        "kind": "permission-mode",
+        "summary": "Permission metadata without an event timestamp"
+      },
+      {
+        "timestamp": "2026-06-23T12:00:00.000Z",
+        "actor": "user",
+        "kind": "user_message",
+        "summary": "Refactor the payment settings screen"
+      }
+    ],
+    "failures": [],
+    "userInterventions": [],
+    "artifacts": [],
+    "redactions": [],
+    "rawPointers": []
+  }
+]

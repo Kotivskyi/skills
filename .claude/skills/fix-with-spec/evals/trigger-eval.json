@@ -1,0 +1,22 @@
+[
+  {"query": "/fix-with-spec the GET /api/herds endpoint returns 200 with an empty array when the farm id doesn't exist, it should 404", "should_trigger": true},
+  {"query": "our auth middleware is accepting expired JWTs because the exp check is using seconds vs millis wrong. fix it, and we use openspec here so make sure the identity-and-access capability spec stays in sync", "should_trigger": true},
+  {"query": "fix the off-by-one in the grazing interval validator (it allows intervals one minute too long) and update the active openspec change's delta + tasks.md so the scenario matches the new behavior", "should_trigger": true},
+  {"query": "the health check is racing on cold start and flaps red for ~2s. patch the readiness probe. we run openspec in this repo so the capability spec probably needs touching too, can you sort both", "should_trigger": true},
+  {"query": "i changed my mind on how the pasture summary rounds area — it should floor hectares, not round to nearest. update the code and the spec scenario that documents the rounding", "should_trigger": true},
+  {"query": "fix the email validation so addresses with a + in the local part are accepted. does the openspec spec for the signup capability need a change? handle both if so", "should_trigger": true},
+  {"query": "the firmware rollback path skips writing to the ACK ledger — that's a regression from last week. fix it and update the openspec spec for firmware-rollout, and since it's a regression keep the reproduce/test evidence", "should_trigger": true},
+  {"query": "admin API returns a 500 instead of 422 when the polygon payload self-intersects. fix the handler and reconcile the openspec capability contract for admin-app", "should_trigger": true},
+  {"query": "small one: the CSV export writes comma decimals under the es-AR locale which breaks downstream parsing. fix it and sync the spec if it documents the export format", "should_trigger": true},
+  {"query": "patch the device-comms reconnect backoff so it caps at 30s instead of growing unbounded, and keep the openspec change that owns the tenant-runtime capability consistent with the fix", "should_trigger": true},
+  {"query": "can you figure out why the herds endpoint sometimes returns stale cached data? don't change any code yet, i just want to understand the root cause first", "should_trigger": false},
+  {"query": "we want to add a brand-new 'pasture rotation scheduler' capability to the backend. can you draft the openspec proposal and design for it?", "should_trigger": false},
+  {"query": "in my little express side-project (no openspec, nothing fancy) there's a null pointer in utils/date.ts when the timezone arg is missing — just fix it", "should_trigger": false},
+  {"query": "update the openspec/specs/README.md area-map table to add a new 'billing' area row pointing at its README", "should_trigger": false},
+  {"query": "create an openspec change called add-webhooks and scaffold the proposal, specs and tasks for it", "should_trigger": false},
+  {"query": "regenerate the OpenAPI client and refresh the API docs site now that the contract changed", "should_trigger": false},
+  {"query": "the github actions e2e job keeps timing out at 10 min, bump the job timeout and add a retry-on-flake step to the workflow yaml", "should_trigger": false},
+  {"query": "what's the difference between the spec-driven and superpowers-workspace openspec schemas, and when would i use each?", "should_trigger": false},
+  {"query": "refactor the pasture validation module to pull the turf helpers out into their own file — no behavior change, just tidying", "should_trigger": false},
+  {"query": "write me a quick unit test for the formatArea helper, it's currently untested", "should_trigger": false}
+]

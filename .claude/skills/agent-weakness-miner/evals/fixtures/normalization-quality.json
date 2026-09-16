@@ -1,0 +1,69 @@
+[
+  {
+    "traceId": "codex:duplicate-session",
+    "source": "codex",
+    "scope": { "kind": "session", "id": "duplicate-a" },
+    "task": { "goal": "Unknown Codex task" },
+    "outcome": { "status": "failed", "signals": ["tool_or_test_failure"] },
+    "timeline": [
+      {
+        "timestamp": null,
+        "actor": "assistant",
+        "kind": "tool",
+        "summary": "Test failed while creating skill output"
+      }
+    ],
+    "failures": [
+      { "timestamp": null, "summary": "Test failed while creating skill output" }
+    ],
+    "userInterventions": [],
+    "artifacts": [],
+    "redactions": [],
+    "rawPointers": []
+  },
+  {
+    "traceId": "codex:duplicate-session",
+    "source": "codex",
+    "scope": { "kind": "session", "id": "duplicate-b" },
+    "task": { "goal": "Unknown Codex task" },
+    "outcome": { "status": "unknown", "signals": [] },
+    "timeline": [
+      {
+        "timestamp": null,
+        "actor": "assistant",
+        "kind": "assistant_message",
+        "summary": "Follow-up packet from another file reused the same trace id"
+      }
+    ],
+    "failures": [],
+    "userInterventions": [],
+    "artifacts": [],
+    "redactions": [],
+    "rawPointers": []
+  },
+  {
+    "traceId": "claude-code:clear-session",
+    "source": "claude-code",
+    "scope": { "kind": "session", "id": "clear-session" },
+    "task": { "goal": "Create a public repository for a skills package" },
+    "outcome": { "status": "partial", "signals": ["user_intervention"] },
+    "timeline": [
+      {
+        "timestamp": "2026-06-23T12:00:00.000Z",
+        "actor": "user",
+        "kind": "user_message",
+        "summary": "Please create a public repository for this skills package"
+      }
+    ],
+    "failures": [],
+    "userInterventions": [
+      {
+        "timestamp": "2026-06-23T12:01:00.000Z",
+        "summary": "User clarified repository visibility"
+      }
+    ],
+    "artifacts": [{ "path": "README.md" }],
+    "redactions": [],
+    "rawPointers": []
+  }
+]

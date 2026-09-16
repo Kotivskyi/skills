@@ -1,14 +1,18 @@
 {
   "name": "kotivskyi-skills",
-  "version": "0.1.0",
+  "version": "0.1.13",
   "description": "Vitalii Kotivskyi's Claude Code skills: plan work, drive PRs to green, and ship safely.",
   "author": {
     "name": "Vitalii Kotivskyi"
   },
   "skills": [
+    "./skills/engineering/agent-weakness-miner",
+    "./skills/engineering/agent-self-harness",
+    "./skills/engineering/authoring-skills",
     "./skills/engineering/bdd-create",
     "./skills/engineering/bdd-implement",
     "./skills/engineering/decision-auto-tracker",
+    "./skills/engineering/design-spec-tracker",
     "./skills/engineering/diagnosing-bugs",
     "./skills/engineering/fix-with-spec",
     "./skills/engineering/pr-watch",
@@ -17,7 +21,6 @@
     "./skills/engineering/tdd",
     "./skills/engineering/handoff-to-paperclip",
     "./skills/engineering/handoff",
-    "./skills/engineering/write-http-files",
-    "./skills/misc/hello"
+    "./skills/engineering/write-http-files"
   ]
 }

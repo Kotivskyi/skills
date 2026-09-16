@@ -13,6 +13,8 @@ claude plugin install kotivskyi-skills@kotivskyi-skills
 
 Restart Claude Code after installation. See the [Claude Code installation guide](https://code.claude.com/docs/en/discover-plugins).
 
+The plugin ships one `SessionStart` hook ([hooks/hooks.json](./hooks/hooks.json)). It adds two or three lines of context only in projects that contain a `design-specs/` folder, for the `design-spec-tracker` skill. In every other project it prints nothing.
+
 To install individual skills with the skills CLI:
 
 ```shell
@@ -31,9 +33,13 @@ npx skills@latest add kotivskyi/skills
 
 | Skill | Description |
 | :---- | :---------- |
+| [agent-self-harness](./skills/engineering/agent-self-harness/SKILL.md) | Improve an agent harness from execution evidence — mine Codex/Claude Code sessions into trace packets, propose competing skill/prompt/tool changes, and validate candidates with `skill-creator` evals behind explicit approval gates. |
+| [agent-weakness-miner](./skills/engineering/agent-weakness-miner/SKILL.md) | Mine normalized trace packets for recurring agent weaknesses — audit packet quality first, then produce weakness packets with suspected failure mechanisms, target surfaces, and targeted eval ideas. Feeds `agent-self-harness`. |
+| [authoring-skills](./skills/engineering/authoring-skills/SKILL.md) | Conventions for the plumbing around a skill in this repo: how it switches itself on, tagged blocks in a user's `CLAUDE.md`, setup-script contract, and idle-cost rules for hooks. Auto-install scripts need the user's explicit yes. |
 | [bdd-create](./skills/engineering/bdd-create/SKILL.md) | Author BDD scenarios and acceptance criteria (Given-When-Then) — the specification side, no implementation. |
 | [bdd-implement](./skills/engineering/bdd-implement/SKILL.md) | Turn BDD scenarios into executable tests — step definitions and Cucumber/Jest/Playwright glue via TDD. |
-| [decision-auto-tracker](./skills/engineering/decision-auto-tracker/SKILL.md) | Capture substantive user decisions from conversations into a greppable log under `decisions/log/` — one validated Markdown file per decision, with a format-enforcing validator script. |
+| [decision-auto-tracker](./skills/engineering/decision-auto-tracker/SKILL.md) | Capture durable user decisions from conversations into a greppable log under `decisions/log/` — one validated Markdown file per decision, with a scaffolder, a config-driven validator, and an audit rubric for finding noise in an existing log. |
+| [design-spec-tracker](./skills/engineering/design-spec-tracker/SKILL.md) | Keep a developer handoff spec written and current while a designer works — same sections as the `design` plugin's `/design-handoff`, filled incrementally under `design-specs/` with gaps and Claude's suggestions marked, plus a readiness validator. |
 | [diagnosing-bugs](./skills/engineering/diagnosing-bugs/SKILL.md) | Feedback-loop-first diagnosis discipline for hard bugs and perf regressions — build a tight red-capable repro, then hypothesize/instrument/fix. Bundled dependency of `fix-with-spec`. |
 | [fix-with-spec](./skills/engineering/fix-with-spec/SKILL.md) | Plan-gated bug/behavior fix that keeps OpenSpec specs consistent under any schema — discovers schemas/apply steps from the OpenSpec CLI; hard-depends on bundled `diagnosing-bugs` & `tdd` plus the project's `/opsx:propose`. |
 | [handoff-to-paperclip](./skills/engineering/handoff-to-paperclip/SKILL.md) | Hand off this session's in-progress work to the Paperclip agent team (CTO by default) — isolated worktree, context doc, and a real PR. |

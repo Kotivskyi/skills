@@ -51,6 +51,32 @@
         "No specific harness edit is recommended as safe",
         "The review mentions redaction or incomplete evidence as a limitation"
       ]
+    },
+    {
+      "id": 5,
+      "name": "normalization-quality-blocks-mining",
+      "prompt": "Use agent-weakness-miner on evals/fixtures/normalization-quality.json. Audit packet quality before mining.",
+      "expected_output": "The audit blocks mining because duplicate trace ids would collapse independent evidence. The output reports duplicate trace ids, notes unknown task goals as a limitation, and does not invent weakness packets.",
+      "files": ["evals/fixtures/normalization-quality.json"],
+      "expectations": [
+        "trace-packet-audit.json reports duplicate_trace_id as a blocking issue",
+        "The output stops before mining weaknesses from duplicated trace ids",
+        "The review mentions unknown task goals as a confidence limitation",
+        "No candidate worktree, skill edit, or prompt edit is proposed as ready to implement"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "claude-normalization-quality-warnings",
+      "prompt": "Use agent-weakness-miner on evals/fixtures/claude-normalization-quality.json. Audit Claude packet quality before mining.",
+      "expected_output": "The audit warns that Claude task goals include command metadata or UUID prefixes, ignores metadata-only missing timestamps, and only limits sequence/duration claims for actionable timeline events without blocking mining.",
+      "files": ["evals/fixtures/claude-normalization-quality.json"],
+      "expectations": [
+        "trace-packet-audit.json reports low_information_task_goal as a non-blocking warning",
+        "metadata-only missing timestamps do not inflate the missing_timestamps count",
+        "The review says grouping by task intent is unreliable until the real user task is recovered",
+        "The output does not block mining solely because of non-actionable metadata timestamps"
+      ]
     }
   ]
 }

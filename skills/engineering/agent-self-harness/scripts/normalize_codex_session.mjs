@@ -44,6 +44,19 @@ function collectStrings(value, out = []) {
   return out;
 }
 
+function contentText(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (!item || typeof item !== 'object') return '';
+      return item.text || item.input_text || item.output_text || '';
+    })
+    .filter(Boolean)
+    .join(' ');
+}
+
 function getTimestamp(record) {
   return record.timestamp || record.time || record.created_at || record.payload?.timestamp || null;
 }
@@ -69,14 +82,49 @@ function redactText(text, counts) {
   return output;
 }
 
+function structuredStrings(record) {
+  const payload = record.payload || {};
+  const strings = [];
+  if (record.type === 'session_meta') {
+    if (payload.id || payload.session_id) strings.push(`session ${payload.id || payload.session_id}`);
+    if (payload.cwd) strings.push(`cwd ${payload.cwd}`);
+    return strings;
+  }
+  const messageText = contentText(payload.content || record.content);
+  if (messageText) strings.push(messageText);
+  for (const key of ['message', 'text', 'command', 'result', 'output', 'name']) {
+    if (typeof payload[key] === 'string') strings.push(payload[key]);
+  }
+  if (payload.arguments) {
+    strings.push(typeof payload.arguments === 'string' ? payload.arguments : JSON.stringify(payload.arguments));
+  }
+  return strings.filter((item) => item.trim().length > 0);
+}
+
 function summarize(record, counts) {
-  const raw = collectStrings(record).join(' ');
+  const structured = structuredStrings(record);
+  const raw = (structured.length ? structured : collectStrings(record)).join(' ');
   const compact = raw.replace(/\s+/g, ' ').trim() || JSON.stringify(record);
   return redactText(compact.slice(0, 700), counts);
 }
 
+function isToolRecord(record) {
+  const payload = record.payload || {};
+  return Boolean(
+    payload.type === 'function_call_output' ||
+      payload.type === 'function_call' ||
+      payload.tool ||
+      payload.command ||
+      payload.result
+  );
+}
+
 function actorFor(record) {
   if (record.role) return record.role;
+  if (record.payload?.role) return record.payload.role;
+  if (record.payload?.type === 'user_message') return 'user';
+  if (record.payload?.type === 'agent_message') return 'assistant';
+  if (isToolRecord(record)) return 'tool';
   if (record.type === 'user') return 'user';
   if (record.type === 'assistant' || record.type === 'response_item') return 'assistant';
   if (record.type === 'session_meta') return 'system';
@@ -85,14 +133,42 @@ function actorFor(record) {
 
 function kindFor(record, summary) {
   if (record.type === 'session_meta') return 'session_meta';
-  if (record.payload?.tool || record.payload?.command || /npm|pnpm|pytest|node --test|shell|bash/i.test(summary)) return 'tool';
+  if (isToolRecord(record) || /npm|pnpm|pytest|node --test|shell|bash/i.test(summary)) return 'tool';
   if (actorFor(record) === 'user') return 'user_message';
   if (actorFor(record) === 'assistant') return 'assistant_message';
   return record.type || 'event';
 }
 
-function isFailure(summary) {
-  return /\b(fail(?:ed|ure)?|error|exit code [1-9]|non-zero|missing artifact|assertion)\b/i.test(summary);
+function exitCodeFor(summary) {
+  const match = summary.match(/\b(?:Process exited with code|exit code)\s*:?\s*([0-9]+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function isPlannedRedStep(record, summary) {
+  return actorFor(record) === 'assistant' && /\b(red test|red step|should fail|expected:\s*fail|fail until)\b/i.test(summary);
+}
+
+function isTaskGoalCandidate(summary) {
+  if (!summary.trim()) return false;
+  if (/(^|\s)# AGENTS\.md instructions\b/i.test(summary)) return false;
+  if (/<environment_context>|<\/environment_context>|<filesystem>|<\/filesystem>/i.test(summary)) return false;
+  return true;
+}
+
+function cleanTaskGoal(summary) {
+  const objective = summary.match(/<objective>\s*([\s\S]*?)\s*(?:<\/objective>|$)/i);
+  const text = objective ? objective[1] : summary;
+  return text.replace(/\s+/g, ' ').trim().slice(0, 180);
+}
+
+function isFailure(record, summary) {
+  const exitCode = exitCodeFor(summary);
+  if (exitCode !== null) return exitCode > 0;
+  if (isPlannedRedStep(record, summary)) return false;
+  if (isToolRecord(record)) {
+    return /\b(fail(?:ed|ure)?|error|non-zero|missing artifact|assertion)\b/i.test(summary);
+  }
+  return /\b(non-zero|missing artifact|assertion failed)\b/i.test(summary);
 }
 
 function isUserIntervention(record, summary) {
@@ -137,7 +213,7 @@ for (const { record, line } of rows) {
   const summary = summarize(record, redactionCounts);
   const actor = actorFor(record);
   const kind = kindFor(record, summary);
-  if (taskGoal === 'Unknown Codex task' && actor === 'user' && summary) taskGoal = summary.slice(0, 180);
+  if (taskGoal === 'Unknown Codex task' && actor === 'user' && isTaskGoalCandidate(summary)) taskGoal = cleanTaskGoal(summary);
   const event = {
     timestamp: getTimestamp(record),
     actor,
@@ -146,7 +222,7 @@ for (const { record, line } of rows) {
     rawPointer: { file: args.input, line }
   };
   timeline.push(event);
-  if (isFailure(summary)) failures.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
+  if (isFailure(record, summary)) failures.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
   if (isUserIntervention(record, summary)) userInterventions.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
   for (const artifact of extractArtifacts(summary)) artifacts.set(artifact.path, artifact);
 }

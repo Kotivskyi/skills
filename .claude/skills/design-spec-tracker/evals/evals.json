@@ -1,0 +1,26 @@
+{
+  "skill_name": "design-spec-tracker",
+  "evals": [
+    {
+      "id": 0,
+      "name": "first-turn-creates-spec",
+      "prompt": "hey, working on the checkout summary screen for the mobile app. it's the last step before payment: list of items, then the totals block, then a promo code field with an 'Apply promo' button (secondary style), and a big 'Pay now' button at the bottom. I want the totals row bold. Question: should the promo field go above the totals block instead? feels like people apply promo before they look at the total. what do you think?",
+      "expected_output": "A design answer to the above/below question, then design-specs/checkout-summary.md created with Overview, Layout, Components, and the bold totals row recorded as decided; the above/below question and unmentioned states (error, empty, loading) in Open Questions; nothing invented as decided; one trailer line at most about the spec.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "update-in-place-no-duplicate",
+      "prompt": "ok changed my mind, promo field goes ABOVE the totals block. also for the promo error: red border on the field and message under it saying 'Code not valid'. and let's do a 200ms ease-out for the promo panel expanding. can you also suggest a better label than 'Apply promo'?",
+      "expected_output": "Label suggestions answered first. The existing design-specs/checkout-summary.md is updated in place: Layout line replaced (promo above totals), error state added to States and Interactions, motion added to Animation / Motion, the two answered Open Questions removed, Changelog entries added, no second spec file created, label suggestions marked [proposed] if written, one trailer line.",
+      "files": ["fixtures/checkout-summary/design-specs/checkout-summary.md"]
+    },
+    {
+      "id": 2,
+      "name": "handoff-signal-gap-list",
+      "prompt": "I think checkout summary is done, I'm sending the figma to Vitalii now",
+      "expected_output": "Handoff check runs on the existing spec. Status stays draft because sections are not covered and open questions remain. Reply is a short gap list (max 5 bullets) naming the uncovered sections and the unconfirmed [proposed] item, and offers to mark ready once answered. No new spec file; no long spec dump in the reply.",
+      "files": ["fixtures/checkout-summary/design-specs/checkout-summary.md"]
+    }
+  ]
+}

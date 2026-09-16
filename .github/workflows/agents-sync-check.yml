@@ -1,0 +1,15 @@
+name: agents-sync-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    name: Verify .agents/skills and .claude/skills mirror skills/
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for skill mirror drift
+        run: sh scripts/sync-agents.sh --check

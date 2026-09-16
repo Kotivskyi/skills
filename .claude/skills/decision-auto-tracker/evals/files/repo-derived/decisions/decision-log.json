@@ -1,0 +1,6 @@
+{
+  "statusMode": "derived",
+  "appendOnly": true,
+  "buckets": ["physics", "protocol", "design", "process", "scar", "unclear"],
+  "templateNote": "Write short sentences in active voice. Quote the source exactly as it reads."
+}

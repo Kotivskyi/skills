@@ -1,0 +1,9 @@
+#!/bin/sh
+# Regenerate .agents/skills and .claude/skills from the staged (index) content
+# and stage them, so the committed copies always match the committed source.
+# Unstaged edits under skills/ are ignored until they are staged.
+set -eu
+
+ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+
+sh "$ROOT_DIR/scripts/sync-agents.sh" --staged

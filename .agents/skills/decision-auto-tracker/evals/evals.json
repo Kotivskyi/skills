@@ -1,0 +1,152 @@
+{
+  "skill_name": "decision-auto-tracker",
+  "notes": "Each eval gives the agent a fixture repo (copy it to <outputs>/repo and treat it as the repo root) and a conversation excerpt. The agent decides what to log, writes files, runs the validator, and writes <outputs>/summary.txt with one line per file created or 'not logged: <reason>'. Dates are explicit in every prompt so filenames are deterministic.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "product-decision-glossary-term",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. During a review of the catalog docs the user said: \"Always call it `Variant`, never `Option` — Option is what the old PHP shop called it and it confuses the new people. Update the docs.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "Exactly one new file decisions/log/2026-09-12-01-<slug>.md with a 2-6 word slug, status active, Decision of at most two sentences, Source quoting the user with the date; validator exits 0.",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "Exactly one new file was added under decisions/log/",
+        "The new file's name matches 2026-09-12-01-<slug>.md with a slug of 2 to 6 words",
+        "The new file has status: active and no supersedes value",
+        "The ## Decision section has at most 2 sentences",
+        "The ## Source section contains the date 2026-09-12",
+        "scripts/validate.mjs exits 0 on the repo"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "skip-task-execution-waiver",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. You asked whether to run the local end-to-end suite before opening the PR for TICKET-1066 (the shared local stack is in use by another session). The user answered: \"Waive local green, open the PR. The integration pin covers it.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "No new decision file. summary.txt says it was not logged and names the reason (one-off task pick / waiver for a specific ticket).",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "No new file was added under decisions/log/",
+        "summary.txt states the message was not logged as a decision",
+        "summary.txt gives a reason that identifies it as a one-off task or ticket-scoped choice (waiver, ship, PR)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "skip-agent-harness-rule",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. After a PR went through five automated review rounds, the user said: \"One AI review round per PR is enough. The agent reads the findings, fixes or rejects each one, pushes once, and never re-triggers the reviewer. A second round is my call. Put that in our agent instructions.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "No new decision file. The rule is added to AGENTS.md (the repo's agent instructions). summary.txt explains it is an agent-harness rule and where it was recorded.",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "No new file was added under decisions/log/",
+        "AGENTS.md was modified to contain the one-review-round rule",
+        "summary.txt explains the rule was not logged because it governs the agent's own workflow (agent-harness / AGENTS.md)"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "split-durable-rule-from-task-pick",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. While scoping TICKET-857 (a new power-report decoder) you asked whether the ticket also needs the proposed `power_report_daily` aggregate view. The user said: \"Ship the decoder, the registry entry and the parity test now. And no — we never build a daily aggregate view for power reports, the dashboard reads the raw rows directly. Drop it from the ticket.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "Exactly one new file: the durable rule (no daily aggregate view for power reports; dashboards read raw rows). The ship-now scope of TICKET-857 is not logged. Decision at most two sentences; slug 2-6 words; validator exits 0.",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "Exactly one new file was added under decisions/log/",
+        "The new file's ## Decision is about not building a daily aggregate view (dashboards read raw rows), not about shipping the decoder",
+        "The new file's ## Decision has at most 2 sentences",
+        "The new filename slug has 2 to 6 words and does not contain the ticket id",
+        "scripts/validate.mjs exits 0 on the repo"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "several-decisions-one-message",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. Closing out a design discussion, the user wrote: \"OK, decisions: (1) the public API is versioned in the path, /v1/, not in a header. (2) Rate limits are per API key, 600 requests per minute, and the limit is returned in the standard RateLimit headers. (3) Webhook retries use exponential backoff, five attempts max, then the event goes to a dead-letter table. Write them down.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "Three new files, 2026-09-12-01, -02 and -03, one per decision, each with a Decision of at most two sentences and a 2-6 word slug. No single file bundles the three. Validator exits 0.",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "Exactly three new files were added under decisions/log/",
+        "The new files have ids 2026-09-12-01, 2026-09-12-02 and 2026-09-12-03",
+        "Each new file's ## Decision covers one of the three topics (path versioning, rate limits, webhook retries) and none covers more than one",
+        "Each new file's ## Decision has at most 2 sentences",
+        "scripts/validate.mjs exits 0 on the repo"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "supersede-in-stored-mode",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. The user said: \"Scratch the Postgres call for the order store. Orders go to DynamoDB — the checkout team already owns a table there and the access pattern is key-value. Log it.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "One new file 2026-09-12-01-<slug>.md with supersedes: 2026-08-01-01 (or the id-slug form) and status active. The old file 2026-08-01-01-postgres-for-order-store.md now has status: superseded and is otherwise unchanged. Validator exits 0.",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "Exactly one new file was added under decisions/log/",
+        "The new file's supersedes field references 2026-08-01-01 (bare id or id-slug form)",
+        "The file 2026-08-01-01-postgres-for-order-store.md now has status: superseded",
+        "No other line of 2026-08-01-01-postgres-for-order-store.md changed",
+        "scripts/validate.mjs exits 0 on the repo"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "supersede-in-append-only-derived-mode",
+      "prompt": "You are working in the firmware repo at ./repo (copy the fixture there first and treat it as the repo root; read decisions/decision-log.json and decisions/README.md). It is 2026-09-12. The user said: \"Change of plan on the sample buffer: 32 readings, not 16. The new board has twice the RAM and we want fewer flushes. Log it.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "One new file 2026-09-12-01-<slug>.md with supersedes: 2026-08-05-01, a valid bucket (design), and NO status line. The old file 2026-08-05-01-sample-buffer-holds-16-readings.md is byte-identical to the fixture. Validator exits 0 with the repo config.",
+      "files": ["evals/files/repo-derived"],
+      "assertions": [
+        "Exactly one new file was added under decisions/log/",
+        "The new file's supersedes field references 2026-08-05-01",
+        "The new file has a bucket field with one of the configured values and has no status field",
+        "The file 2026-08-05-01-sample-buffer-holds-16-readings.md is byte-identical to the fixture copy",
+        "scripts/validate.mjs exits 0 on the repo"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "clarification-appends-to-existing",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. The user said: \"On the 30-second checkout timeout — to be clear, that's 30 seconds of silence from the provider. If the provider sends a 'pending' heartbeat the clock restarts. Same decision, just making it precise.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "No new file. The existing 2026-08-01-02-checkout-timeout-30s.md gains a '## Clarification 2026-09-12' block at the end; its status stays active. Validator exits 0.",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "No new file was added under decisions/log/",
+        "The file 2026-08-01-02-checkout-timeout-30s.md now ends with a section headed '## Clarification 2026-09-12'",
+        "The file 2026-08-01-02-checkout-timeout-30s.md still has status: active",
+        "scripts/validate.mjs exits 0 on the repo"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "sequence-number-continues-same-day",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). The decision below was made on 2026-09-10, so date the entry 2026-09-10 even though you are logging it later. The user said that day: \"Prices are stored as integer minor units — cents — never as decimals or floats. Every service, every table.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "One new file with id 2026-09-10-03 (two entries from that day already exist). No duplicate id. Validator exits 0.",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "Exactly one new file was added under decisions/log/",
+        "The new file's id and filename prefix are 2026-09-10-03",
+        "The new file's date field is 2026-09-10",
+        "scripts/validate.mjs exits 0 on the repo (no duplicate id)"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "long-title-short-slug",
+      "prompt": "You are working in the firmware repo at ./repo (copy the fixture there first and treat it as the repo root; read decisions/decision-log.json). It is 2026-09-12. The user said: \"Decided: the source-digest check reads the running image's own SHA-256 from the MCUboot TLV area with our small hand-rolled parser, rather than linking the full MCUboot bootutil library. It's a protocol thing — the TLV layout is fixed by MCUboot. Log it.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "One new file whose slug has 2-6 words while the H1 title may carry the long form; bucket protocol; no status line; Decision at most two sentences; validator exits 0.",
+      "files": ["evals/files/repo-derived"],
+      "assertions": [
+        "Exactly one new file was added under decisions/log/",
+        "The new filename slug has 2 to 6 words",
+        "The new file has bucket: protocol and no status field",
+        "The ## Decision section has at most 2 sentences",
+        "scripts/validate.mjs exits 0 on the repo"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "skip-brainstorming",
+      "prompt": "You are working in the repo at ./repo (copy the fixture there first and treat it as the repo root). It is 2026-09-12. Mid-discussion about the session cache the user wrote: \"hmm, we could maybe put sessions in Redis… or memcached, that's simpler to run. Or honestly just Postgres with a TTL column, we already have it. Let me think about it over lunch.\" Handle this per the decision-auto-tracker skill, then write summary.txt.",
+      "expected_output": "No new decision file. summary.txt says nothing was logged because the user has not committed (brainstorming).",
+      "files": ["evals/files/repo-stored"],
+      "assertions": [
+        "No new file was added under decisions/log/",
+        "summary.txt states nothing was logged because the user has not committed to a choice"
+      ]
+    }
+  ]
+}
