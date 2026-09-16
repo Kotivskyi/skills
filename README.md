@@ -4,16 +4,18 @@ Vitalii Kotivskyi's skills and plugins for [Claude Code](https://claude.ai/code)
 
 ## Install
 
-Add this repository as a Claude Code marketplace, then install the skills plugin:
+Add this repository as a Claude Code marketplace, then install the engineering plugin:
 
 ```shell
 claude plugin marketplace add Kotivskyi/skills
-claude plugin install kotivskyi-skills@kotivskyi-skills
+claude plugin install engineering@kotivskyi-skills
 ```
 
 Restart Claude Code after installation. See the [Claude Code installation guide](https://code.claude.com/docs/en/discover-plugins).
 
-The plugin ships one `SessionStart` hook ([hooks/hooks.json](./hooks/hooks.json)). It adds two or three lines of context only in projects that contain a `design-specs/` folder, for the `design-spec-tracker` skill. In every other project it prints nothing.
+The plugin ships one `SessionStart` hook ([hooks/hooks.json](./plugins/engineering/hooks/hooks.json)). It adds two or three lines of context only in projects that contain a `design-specs/` folder, for the `design-spec-tracker` skill. In every other project it prints nothing.
+
+The existing `kotivskyi-skills@kotivskyi-skills` plugin remains available. Enable only one skills plugin to avoid duplicate skills and hooks.
 
 To install individual skills with the skills CLI:
 
@@ -52,6 +54,16 @@ npx skills@latest add kotivskyi/skills
 See [CLAUDE.md](./CLAUDE.md) for governance rules (how to add, change, or remove skills).
 
 ## Plugins
+
+[Engineering](./plugins/engineering/README.md) contains all 16 active engineering skills and their support files.
+Its `skills/` directory uses the [standard Claude Code plugin layout](https://code.claude.com/docs/en/plugins).
+Use `/engineering:plan`, `/engineering:pr-watch`, or `/engineering:handoff` after installation.
+
+Test the engineering plugin from this repository:
+
+```shell
+claude --plugin-dir ./plugins/engineering
+```
 
 [Shunt for Pi](./plugins/shunt/README.md) uses the Pi CLI for bulk file reads and code generation.
 It keeps Spotify Shunt's hooks and skills, with Bash scripts and a shared helper. Python is not required.

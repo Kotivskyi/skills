@@ -93,7 +93,8 @@ macOS does not ship Node, and nothing the designer touches requires it. Only the
 The validator is for whoever builds the design, who has Node. From the designer's project root:
 
 ```bash
-node ~/.claude/plugins/cache/kotivskyi-skills/kotivskyi-skills/*/skills/engineering/design-spec-tracker/scripts/validate.mjs --summary
+node /path/to/design-spec-tracker/scripts/validate.mjs --summary
 ```
 
+Replace `/path/to/design-spec-tracker` with this skill's installation directory.
 It prints one row per spec with status, covered sections, open questions, and proposed items, then any format errors.

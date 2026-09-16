@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Keep `.claude-plugin/plugin.json` version in step with `package.json`.
+// Keep both skills plugin manifests in step with `package.json`.
 //
 // `package.json` is the source of truth: the release workflow bumps it on every
 // push to `main`. Claude Code reads the version from `.claude-plugin/plugin.json`
@@ -22,7 +22,10 @@ import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "package.json";
-const TARGET = path.join(".claude-plugin", "plugin.json");
+const TARGETS = [
+  path.join(".claude-plugin", "plugin.json"),
+  path.join("plugins", "engineering", ".claude-plugin", "plugin.json"),
+];
 
 function readJson(relPath) {
   const abs = path.join(REPO_ROOT, relPath);
@@ -47,46 +50,50 @@ const check = process.argv.includes("--check");
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(
     "Usage: node scripts/sync-plugin-version.mjs [--check]\n\n" +
-      `Copies the \`version\` from ${SOURCE} into ${TARGET}.\n` +
+      `Copies the \`version\` from ${SOURCE} into ${TARGETS.join(" and ")}.\n` +
       "--check verifies they agree and writes nothing; exit 1 if they differ."
   );
   process.exit(0);
 }
 
 const source = readJson(SOURCE);
-const target = readJson(TARGET);
 const sourceVersion = parse(SOURCE, source.text).version;
-const targetJson = parse(TARGET, target.text);
 
 if (typeof sourceVersion !== "string" || sourceVersion === "") {
   console.error(`sync-plugin-version: ${SOURCE} has no \`version\` field`);
   process.exit(2);
 }
 
-if (targetJson.version === sourceVersion) {
-  console.log(`sync-plugin-version: in sync at ${sourceVersion}`);
-  process.exit(0);
-}
+for (const TARGET of TARGETS) {
+  const target = readJson(TARGET);
+  const targetJson = parse(TARGET, target.text);
 
-if (check) {
-  console.error(
-    `sync-plugin-version: out of sync — ${SOURCE} is ${sourceVersion}, ` +
-      `${TARGET} is ${targetJson.version}.\n` +
-      "Run `node scripts/sync-plugin-version.mjs` to fix."
+  if (targetJson.version === sourceVersion) {
+    console.log(`sync-plugin-version: ${TARGET} in sync at ${sourceVersion}`);
+    continue;
+  }
+
+  if (check) {
+    console.error(
+      `sync-plugin-version: out of sync — ${SOURCE} is ${sourceVersion}, ` +
+        `${TARGET} is ${targetJson.version}.\n` +
+        "Run `node scripts/sync-plugin-version.mjs` to fix."
+    );
+    process.exitCode = 1;
+    continue;
+  }
+
+  // Rewrite only the version line to preserve key order and formatting.
+  const replaced = target.text.replace(
+    /^(\s*"version"\s*:\s*")[^"]*(")/m,
+    (_m, head, tail) => `${head}${sourceVersion}${tail}`
   );
-  process.exit(1);
+  if (replaced === target.text) {
+    console.error(`sync-plugin-version: cannot set the version in ${TARGET}`);
+    process.exit(2);
+  }
+  fs.writeFileSync(target.abs, replaced);
+  console.log(
+    `sync-plugin-version: ${TARGET} ${targetJson.version} -> ${sourceVersion}`
+  );
 }
-
-// Rewrite only the version line so key order and formatting stay untouched.
-const replaced = target.text.replace(
-  /^(\s*"version"\s*:\s*")[^"]*(")/m,
-  (_m, head, tail) => `${head}${sourceVersion}${tail}`
-);
-if (replaced === target.text) {
-  console.error(`sync-plugin-version: no \`version\` line found in ${TARGET}`);
-  process.exit(2);
-}
-fs.writeFileSync(target.abs, replaced);
-console.log(
-  `sync-plugin-version: ${TARGET} ${targetJson.version} -> ${sourceVersion}`
-);

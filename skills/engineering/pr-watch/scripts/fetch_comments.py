@@ -7,8 +7,8 @@ Requires:
   - Either current branch has an associated PR, or --owner --repo --number is supplied.
 
 Examples:
-  python3 "${CLAUDE_PLUGIN_ROOT}/skills/engineering/pr-watch/scripts/fetch_comments.py"
-  python3 "${CLAUDE_PLUGIN_ROOT}/skills/engineering/pr-watch/scripts/fetch_comments.py" --owner OWNER --repo REPO --number 60
+  python3 /path/to/pr-watch/scripts/fetch_comments.py
+  python3 /path/to/pr-watch/scripts/fetch_comments.py --owner OWNER --repo REPO --number 60
 """
 
 from __future__ import annotations

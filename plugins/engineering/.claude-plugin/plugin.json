@@ -1,0 +1,11 @@
+{
+  "name": "engineering",
+  "version": "0.1.14",
+  "description": "Engineering skills for planning, implementation, testing, review, and delivery in Claude Code.",
+  "author": {
+    "name": "Vitalii Kotivskyi"
+  },
+  "repository": "https://github.com/Kotivskyi/skills",
+  "license": "MIT",
+  "skills": "./skills/"
+}

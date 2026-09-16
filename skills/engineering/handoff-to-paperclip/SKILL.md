@@ -181,7 +181,7 @@ Only after approval. Use the bundled helper so company + CTO resolution stays
 deterministic (it resolves the assignee by **role**, so no hard-coded ids):
 
 ```bash
-python3 skills/engineering/handoff-to-paperclip/scripts/handoff_task.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/handoff_task.py" \
   --title "<task title>" \
   --body-file <path-to-task-body.md> \
   --assignee-role cto \

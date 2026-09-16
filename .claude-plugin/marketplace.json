@@ -1,10 +1,15 @@
 {
   "name": "kotivskyi-skills",
-  "description": "Claude Code skills and the Shunt plugin for Pi.",
+  "description": "Engineering skills and the Shunt plugin for Claude Code.",
   "owner": {
     "name": "Vitalii Kotivskyi"
   },
   "plugins": [
+    {
+      "name": "engineering",
+      "source": "./plugins/engineering",
+      "description": "Skills for planning, implementation, testing, review, and delivery in Claude Code."
+    },
     {
       "name": "kotivskyi-skills",
       "source": "./",

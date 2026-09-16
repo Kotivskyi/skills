@@ -34,7 +34,7 @@ jobs:
           npm version patch --no-git-tag-version
           VERSION=$(node -p "require('./package.json').version")
           node scripts/sync-plugin-version.mjs
-          git add package.json package-lock.json .claude-plugin/plugin.json
+          git add package.json package-lock.json .claude-plugin/plugin.json plugins/engineering/.claude-plugin/plugin.json
           git commit -m "chore: bump version to $VERSION"
           git tag "v$VERSION"
           git push

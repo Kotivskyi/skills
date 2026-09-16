@@ -1,0 +1,34 @@
+[
+  {
+    "traceId": "codex:slow-success-1",
+    "source": "codex",
+    "scope": { "kind": "session", "id": "slow-success-1" },
+    "task": { "goal": "Update a small README section" },
+    "outcome": { "status": "succeeded", "signals": ["high_token_usage", "many_tool_calls"] },
+    "timeline": [
+      { "timestamp": "2026-06-20T12:00:00.000Z", "actor": "assistant", "kind": "tool", "summary": "Searched entire repo repeatedly before editing one README line" },
+      { "timestamp": "2026-06-20T12:10:00.000Z", "actor": "assistant", "kind": "assistant_message", "summary": "Completed task after 38 tool calls" }
+    ],
+    "failures": [],
+    "userInterventions": [],
+    "artifacts": [{ "path": "README.md" }],
+    "redactions": [],
+    "rawPointers": [{ "file": "codex-slow-1.jsonl", "line": 7 }]
+  },
+  {
+    "traceId": "claude-code:slow-success-2",
+    "source": "claude-code",
+    "scope": { "kind": "session", "id": "slow-success-2" },
+    "task": { "goal": "Rename one local variable" },
+    "outcome": { "status": "succeeded", "signals": ["high_token_usage", "many_tool_calls"] },
+    "timeline": [
+      { "timestamp": "2026-06-21T12:00:00.000Z", "actor": "assistant", "kind": "tool", "summary": "Read 24 unrelated files before touching the target file" },
+      { "timestamp": "2026-06-21T12:08:00.000Z", "actor": "assistant", "kind": "assistant_message", "summary": "Completed variable rename correctly" }
+    ],
+    "failures": [],
+    "userInterventions": [],
+    "artifacts": [{ "path": "src/example.ts" }],
+    "redactions": [],
+    "rawPointers": [{ "file": "claude-slow-2.jsonl", "line": 8 }]
+  }
+]

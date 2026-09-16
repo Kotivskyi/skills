@@ -1,0 +1,5 @@
+{"type":"session_meta","timestamp":"2026-06-20T10:00:00.000Z","session_id":"codex-fixture","payload":{"id":"codex-fixture","cwd":"/Users/vitalii.kotivskyi/workspace/agent-team"}}
+{"type":"event_msg","timestamp":"2026-06-20T10:01:00.000Z","role":"user","payload":{"message":"Please add a verification step for the report generator. OPENAI_API_KEY=sk-test-fixture must stay private."}}
+{"type":"response_item","timestamp":"2026-06-20T10:04:00.000Z","role":"assistant","payload":{"tool":"shell","command":"npm test","result":"exit code 1: report.test.mjs failed with missing artifact report.html"}}
+{"type":"event_msg","timestamp":"2026-06-20T10:06:00.000Z","role":"user","payload":{"message":"The test failed and the report artifact is missing. Please verify before finalizing."}}
+{"type":"response_item","timestamp":"2026-06-20T10:08:00.000Z","role":"assistant","payload":{"message":"I finalized without generating report.html","artifacts":["report.md"]}}

@@ -1,0 +1,17 @@
+[
+  {
+    "traceId": "codex:one-off-download",
+    "source": "codex",
+    "scope": { "kind": "session", "id": "one-off-download" },
+    "task": { "goal": "Run a dependency install for a prototype" },
+    "outcome": { "status": "blocked", "signals": ["network_timeout"] },
+    "timeline": [
+      { "timestamp": "2026-06-20T11:00:00.000Z", "actor": "assistant", "kind": "tool", "summary": "curl timed out downloading a temporary package mirror" }
+    ],
+    "failures": [{ "summary": "curl timed out downloading a temporary package mirror" }],
+    "userInterventions": [],
+    "artifacts": [],
+    "redactions": [],
+    "rawPointers": [{ "file": "codex-one-off.jsonl", "line": 2 }]
+  }
+]

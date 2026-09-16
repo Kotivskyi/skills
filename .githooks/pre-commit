@@ -1,5 +1,5 @@
 #!/bin/sh
-# Regenerate .agents/skills and .claude/skills from the staged (index) content
+# Regenerate skill mirrors and the engineering package from staged content
 # and stage them, so the committed copies always match the committed source.
 # Unstaged edits under skills/ are ignored until they are staged.
 set -eu

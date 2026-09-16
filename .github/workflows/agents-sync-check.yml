@@ -7,9 +7,14 @@ on:
 
 jobs:
   check:
-    name: Verify .agents/skills and .claude/skills mirror skills/
+    name: Verify skill mirrors and engineering package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Check for skill mirror drift
         run: sh scripts/sync-agents.sh --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check plugin versions
+        run: node scripts/sync-plugin-version.mjs --check

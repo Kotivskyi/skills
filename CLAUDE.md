@@ -34,12 +34,13 @@ Move the directory to `skills/deprecated/` and remove it from `plugin.json` and 
 
 ## Versioning
 
-Two manifests carry a version for this plugin and they must agree:
+Three manifests carry the engineering release version and must agree:
 
 - `package.json` is the source of truth. The release workflow runs `npm version patch` on every push to `main` that is not itself a bump commit.
 - `.claude-plugin/plugin.json` is the version Claude Code records when someone installs the plugin. A stale value there means installed copies never see an update, however many times `package.json` was bumped.
+- `plugins/engineering/.claude-plugin/plugin.json` is the version for the standalone engineering plugin.
 
-Do not hand-edit either version. The release workflow bumps `package.json`, then runs the sync script, then commits both files in one bump commit.
+Do not hand-edit these versions. The release workflow bumps `package.json`, runs the sync script, then commits all release files.
 
 Check locally that they agree:
 
@@ -59,6 +60,15 @@ skills/<bucket>/<name>/  ->  .agents/skills/<name>/
 ```
 
 Never hand-edit either dot-tree. Anything typed there is destroyed on the next sync. Edit `skills/<bucket>/<name>/` and run the script.
+
+The same script generates the standalone Claude Code plugin at `plugins/engineering/`:
+
+- `skills/engineering/<name>/` becomes `plugins/engineering/skills/<name>/`.
+- `hooks/hooks.json` becomes `plugins/engineering/hooks/hooks.json`, with paths adjusted for the flat skill layout.
+
+These package directories are generated. Never hand-edit them.
+The marketplace lists `engineering`, the existing root plugin, and `shunt`.
+Keep bundled script paths relative to the installed skill. In Claude Code skill instructions, use `${CLAUDE_SKILL_DIR}`.
 
 The mirror is flat and keyed by skill name, because that is the layout both dot-trees expect; buckets exist only in the source tree. `deprecated/` and `in-progress/` are never mirrored, matching what `link-skills.sh` already skips. Two skills sharing a name across buckets abort the sync rather than silently dropping one.
 
@@ -91,6 +101,6 @@ Keep a hook's script inside the skill that owns it and point at it with `${CLAUD
 
 - `bash scripts/link-skills.sh` — symlink all active skills into `~/.claude/skills` for local dev.
 - `bash scripts/list-skills.sh` — print all `SKILL.md` paths.
-- `node scripts/sync-plugin-version.mjs` — copy the `package.json` version into `.claude-plugin/plugin.json`; `--check` verifies without writing.
-- `sh scripts/sync-agents.sh` — mirror `skills/` into `.agents/skills` and `.claude/skills`; `--staged` for the hook, `--check` for CI.
+- `node scripts/sync-plugin-version.mjs` — copy the `package.json` version into both skills plugin manifests; `--check` verifies without writing.
+- `sh scripts/sync-agents.sh` — generate agent mirrors and the engineering package; `--staged` for the hook, `--check` for CI.
 - `sh scripts/setup-hooks.sh` — point git at `.githooks` so the pre-commit mirror runs. Once per clone.
