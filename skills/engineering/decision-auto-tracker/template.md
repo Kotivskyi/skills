@@ -1,14 +1,25 @@
 ---
 id: YYYY-MM-DD-NN
 date: YYYY-MM-DD
-topic: short-kebab-slug
+topic: two-to-six-word-slug
 status: active
 tags: []
 linear:
 supersedes:
 ---
 
-# Human-readable title
+# Human-readable title (may be long; the slug is the short form)
+
+<!--
+Prefer `node <skill-dir>/scripts/new-decision.mjs "<title>"` over copying this
+file: it derives the id, date, topic and sequence number — the four fields that
+get out of step — and applies the repo's decision-log.json.
+
+If the repo's config sets `statusMode: "derived"`, delete the `status:` line.
+If it lists `buckets`, add `bucket: <name>` after `topic:`.
+The first line of the file must be `---` and the first non-blank line after the
+frontmatter must be the `# ` title. Remove this comment before saving.
+-->
 
 ## Decision
 
@@ -25,4 +36,4 @@ write: `User call, no further rationale given.`
 
 ## Source
 
-Paraphrased or quoted conversation excerpt, plus date. One or two lines.
+Quoted or paraphrased conversation excerpt from the user, plus the date (YYYY-MM-DD).
