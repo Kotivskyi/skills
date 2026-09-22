@@ -107,3 +107,9 @@ test('summary_missing appears only with --expect-summaries', () => {
 test('a missing evidence file exits 2', () => {
   assert.equal(runScript('audit-evidence.mjs', ['/no/such/evidence.jsonl']).status, 2);
 });
+
+test('the usage message lists every flag', () => {
+  const result = runScript('audit-evidence.mjs', []);
+  assert.equal(result.status, 1);
+  for (const flag of ['--strict', '--allow-source', '--expect-summaries', '--out']) assert.match(result.stderr, new RegExp(flag), flag);
+});

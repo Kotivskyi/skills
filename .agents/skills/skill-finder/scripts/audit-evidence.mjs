@@ -110,7 +110,7 @@ async function main(argv) {
     'expect-summaries': { type: 'boolean' },
     out: { type: 'string' }
   });
-  if (positionals.length !== 1) throw new UsageError('usage: audit-evidence.mjs <evidence.jsonl> [--strict] [--allow-source <name>]');
+  if (positionals.length !== 1) throw new UsageError('usage: audit-evidence.mjs <evidence.jsonl> [--strict] [--allow-source <name>] [--expect-summaries] [--out <file>]');
   const file = path.resolve(positionals[0]);
   const result = await auditEvidence(file, { allowSources: values['allow-source'], expectSummaries: values['expect-summaries'] });
   await writeJson(path.resolve(values.out ?? path.join(path.dirname(file), 'evidence-audit.json')), result);
