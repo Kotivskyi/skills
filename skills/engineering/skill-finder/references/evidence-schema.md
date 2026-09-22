@@ -35,7 +35,7 @@
 
 ## Pointer
 
-A pointer is `{ "file": "<absolute path>", "line": <line number, from 1> }`. It names the source line that holds the text. `verify-suggestion.mjs` reads the line again before Gate 2. For a JSONL line, it compares the quote with the message text of that one record. For a text file, it compares the quote with that line and the next 4 lines.
+A pointer is `{ "file": "<absolute path>", "line": <line number, from 1> }`. It names the source line that holds the text. `verify-suggestion.mjs` reads the line again before Gate 2. For a JSONL line, it compares the quote with the message text of that one record. For a text file, it compares the quote with that line and the next 4 lines. It first removes a leading `- ` or `* ` list marker and each `**` from these lines, as the OpenSpec adapter does.
 
 ## Example
 

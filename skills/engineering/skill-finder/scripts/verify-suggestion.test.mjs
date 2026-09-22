@@ -107,3 +107,27 @@ test('quotePrefix stops at a redaction marker', () => {
   assert.equal(quotePrefix('  Use   Bearer [REDACTED] to call it'), 'Use Bearer');
   assert.equal(quotePrefix('x'.repeat(50)), 'x'.repeat(40));
 });
+
+test('an OpenSpec bullet quote matches its raw proposal line', () => {
+  const { root, runDir } = setup();
+  const proposal = path.join(root, 'proposal.md');
+  writeFileSync(proposal, [
+    '# Add sim runner deploy',
+    '',
+    '## What Changes',
+    '',
+    '- **Deploy script**: add the deploy script for the sim runner.',
+    '- Add a smoke test.'
+  ].join('\n'));
+  const file = path.join(runDir, 'suggestions.json');
+  const suggestions = JSON.parse(readFileSync(file, 'utf8'));
+  suggestions.suggestions[0].evidence = [{
+    episodeId: 'openspec-archive:2026-09-01-add-sim-runner-deploy',
+    quote: 'Deploy script: add the deploy script for the sim runner.',
+    pointer: { file: proposal, line: 5 }
+  }];
+  writeFileSync(file, JSON.stringify(suggestions, null, 2));
+  const result = runScript('verify-suggestion.mjs', ['--run', runDir, '--id', 'sf-1']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.summary.status, 'ok');
+});

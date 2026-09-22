@@ -41,7 +41,8 @@ export async function lineTextAt(file, line, span = 5) {
     if (Array.isArray(content)) return content.filter((block) => block?.type === 'text').map((block) => block.text).join('\n');
     return rows[0];
   }
-  return rows.join('\n');
+  // Clean text rows the same way the OpenSpec adapter cleans bullet intents: no list marker, no `**`.
+  return rows.map((row) => row.replace(/^\s*[-*]\s+/, '').replace(/\*\*/g, '')).join('\n');
 }
 
 export function diffCatalogs(before, after) {
