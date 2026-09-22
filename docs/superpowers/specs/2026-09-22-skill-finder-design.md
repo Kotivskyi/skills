@@ -212,7 +212,7 @@ Record requirements: `id` prefixed with the source name, `days` filled when date
 
 ### claude-sessions
 
-Location: `~/.claude/projects/<encoded-cwd>/`. The encoded name is the absolute path with every `/` replaced by `-`. Flags: `--project <path>` encodes the path, `--store <dir>` names the folder directly, `--session <id>` limits to one session.
+Location: `~/.claude/projects/<encoded-cwd>/`. The encoded name is the absolute path with every character that is not a letter or a digit replaced by `-`. Flags: `--project <path>` encodes the path, `--store <dir>` names the folder directly, `--session <id>` limits to one session.
 
 Layout: `<session-id>.jsonl` is the main transcript. `<session-id>/subagents/agent-*.jsonl` are sidechains. Both are parsed. Sidechain skill and tool calls count in the parent episode with `sidechain: true`.
 
@@ -489,7 +489,7 @@ Stop conditions: a missing or unreadable source, a blocking audit, no candidate 
 
 ## 17. Tests
 
-`node --test skills/engineering/skill-finder/scripts/` runs every `*.test.mjs`.
+`node --test skills/engineering/skill-finder/scripts/*.test.mjs` runs every test file. Node 22 rejects a directory argument, so pass the shell glob.
 
 Fixtures under `scripts/fixtures/`:
 
