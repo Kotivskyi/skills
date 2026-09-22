@@ -27,7 +27,7 @@ For a target T, behavior cases are the larger of 10 and 20% of T. Trigger cases 
 
 - Keywords: tokens of the suggestion title, the proposal name, the trigger phrases, the candidate keys, and the target skill name.
 - Positives: prompts from the suggestion's episodes with overlap 0.15 or more with the keywords. OpenSpec proposal leads count. Highest overlap first.
-- Negatives, the near-misses: prompts from other episodes with overlap from 0.15 up to, but not including, 0.5. Episodes from another candidate cluster, or episodes where another catalog skill fired, come first.
+- Negatives, the near-misses: prompts from other episodes with overlap from 0.15 up to, but not including, 0.5. An episode where the target skill fired never gives negatives. Episodes from another candidate cluster, or episodes where another catalog skill fired, come first.
 - Behavior cases: the first prompt of each suggestion episode, the prompt that starts the work.
 
 ## Filters

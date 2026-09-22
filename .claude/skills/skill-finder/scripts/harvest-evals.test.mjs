@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { makeEpisode, runScript, tmpDir, writeRun } from './lib/testing.mjs';
+import { catalogEntry, makeCatalog, makeEpisode, runScript, tmpDir, writeRun } from './lib/testing.mjs';
 import { overlap, tokenize } from './lib/tokens.mjs';
 import { acceptPrompt, quotas } from './harvest-evals.mjs';
 
@@ -221,4 +221,49 @@ test('acceptPrompt applies the filters', () => {
 test('an unknown suggestion id exits 1', () => {
   const runDir = world({ own: 3 });
   assert.equal(runScript('harvest-evals.mjs', ['--run', runDir, '--id', 'sf-404']).status, 1);
+});
+
+test('a prompt from an episode where the target skill fired is never a negative', () => {
+  const runDir = tmpDir();
+  const fired = 'Create an http request collection for the billing endpoints so the team can replay payment calls locally.';
+  const plain = 'Add an http request check for the invoice endpoints so the nightly job can confirm refunds work.';
+  const owns = [0, 1, 2].map((i) => makeEpisode({
+    id: `claude-sessions:own-${i}`,
+    intents: [intent(`Write the http request file for the ${FEATURES[i]} api and add a rest request for ${ENVS[i]}.`, `own-${i}`, 2)]
+  }));
+  writeRun(runDir, {
+    episodes: [
+      ...owns,
+      makeEpisode({ id: 'claude-sessions:fired', skillsInvoked: [{ name: 'write-http-files', count: 1, sidechain: false }], intents: [intent(fired, 'fired', 2)] }),
+      makeEpisode({ id: 'claude-sessions:plain', intents: [intent(plain, 'plain', 2)] })
+    ],
+    catalog: makeCatalog([catalogEntry({ name: 'write-http-files' })]),
+    suggestions: {
+      runId: 'r1',
+      generatedAt: '2026-09-22T00:00:00.000Z',
+      suggestions: [{
+        id: 'sf-1',
+        kind: 'silent-skill',
+        title: 'write-http-files stays silent for rest request files',
+        candidateKeys: ['write rest request file'],
+        catalogMatch: 'write-http-files',
+        proposal: {
+          name: 'write-http-files',
+          change: { skill: 'write-http-files', descriptionBefore: 'Author http files.', descriptionAfter: 'Author http and rest request files.' }
+        },
+        provenance: { episodeIds: owns.map((episode) => episode.id) }
+      }]
+    }
+  });
+  const result = runScript('harvest-evals.mjs', ['--run', runDir, '--id', 'sf-1']);
+  assert.equal(result.status, 0, result.stderr);
+  const out = path.join(runDir, 'evals-sf-1');
+  const keywords = read(out, 'harvest.json').keywords;
+  for (const text of [fired, plain]) {
+    const score = overlap(tokenize(text), keywords);
+    assert.ok(score >= 0.15 && score < 0.5, `${text}: ${score}`);
+  }
+  const triggers = read(out, 'trigger-eval.json');
+  assert.equal(triggers.some((entry) => entry.query === fired && entry.should_trigger === false), false);
+  assert.equal(triggers.some((entry) => entry.query === plain && entry.should_trigger === false), true);
 });

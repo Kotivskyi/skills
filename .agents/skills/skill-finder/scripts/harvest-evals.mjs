@@ -66,6 +66,9 @@ export function harvest({ suggestion, episodes, aggregate = null, catalog = null
     (aggregate?.candidates ?? []).filter((candidate) => !ownKeys.has(candidate.key)).flatMap((candidate) => candidate.episodeIds ?? [])
   );
   const resolve = catalog ? makeResolver(catalog.skills ?? []) : () => [];
+  // The skill this suggestion changes, as qualified names. Empty for a new skill.
+  const targetName = suggestion.catalogMatch || suggestion.proposal?.change?.skill || null;
+  const targets = new Set(targetName ? resolve(targetName).map((skill) => skill.qualifiedName) : []);
   const positives = [];
   const negatives = [];
   const starts = [];
@@ -79,7 +82,10 @@ export function harvest({ suggestion, episodes, aggregate = null, catalog = null
         if (score >= POSITIVE_MIN) positives.push({ episode, intent: item, score });
       }
     } else {
-      const preferred = otherClusters.has(episode.id) || invocationsOf(episode).some((entry) => resolve(entry.name).length > 0);
+      const fired = invocationsOf(episode).flatMap((entry) => resolve(entry.name).map((skill) => skill.qualifiedName));
+      // Where the target skill fired, the prompts can be positives, so they are never negatives.
+      if (fired.some((name) => targets.has(name))) continue;
+      const preferred = otherClusters.has(episode.id) || fired.some((name) => !targets.has(name));
       for (const item of intents) {
         const score = overlap(tokenize(item.text), keywords);
         if (score >= NEAR_MISS_MIN && score < NEAR_MISS_MAX) negatives.push({ episode, intent: item, score, preferred });
