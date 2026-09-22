@@ -209,3 +209,25 @@ test('a digest user turn is at most 600 characters', () => {
   assert.equal(userLines.length, 1);
   assert.ok(userLines[0].length <= 606, `user line has ${userLines[0].length} characters`);
 });
+
+test('a Bash digest line is redacted before it is cut to 80 characters', () => {
+  const token = 'ghp_Ab1Cd2Ef3Gh4Ij5Kl6Mn7Op8Qr9St0Uv1Wx2';
+  const prefix = 'curl -s -H "Accept: application/json" https://api.example.com/herds -u ';
+  assert.ok(prefix.length < 79 && prefix.length + token.length > 80, 'the token crosses column 80');
+  const store = writeSession('66666666-6666-4666-8666-666666666666', [
+    { type: 'user', message: { role: 'user', content: 'List the herds from the api.' }, origin: { kind: 'human' } },
+    {
+      type: 'assistant',
+      message: { id: 'm1', role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: `${prefix}${token} -o herds.json\necho done` } }] }
+    }
+  ]);
+  const runDir = tmpDir();
+  const result = runScript('extract-claude-sessions.mjs', ['--store', store, '--out', runDir]);
+  assert.equal(result.status, 0, result.stderr);
+  const [record] = evidence(runDir);
+  const digest = readFileSync(path.join(runDir, record.digest), 'utf8');
+  for (let i = 0; i + 8 <= token.length; i += 1) {
+    assert.equal(digest.includes(token.slice(i, i + 8)), false, `digest holds ${token.slice(i, i + 8)}`);
+  }
+  assert.ok(record.redactions.some((entry) => entry.kind === 'long_token' && entry.count >= 1), JSON.stringify(record.redactions));
+});

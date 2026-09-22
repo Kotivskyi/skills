@@ -138,7 +138,8 @@ function handleAssistant(record, state, sidechain) {
       if (!sidechain) pushLine(state.turn, `[skill] ${input.skill}`);
     } else if (block.name === 'Bash' && typeof input.command === 'string') {
       for (const pattern of commandPatterns(input.command)) bump(state.patterns, pattern);
-      if (!sidechain) pushLine(state.turn, `[tool] Bash: ${truncate(input.command.split('\n')[0], 80)}`);
+      // Redact before the cut, so a token that crosses column 80 cannot leave a short fragment.
+      if (!sidechain) pushLine(state.turn, `[tool] Bash: ${truncate(redact(input.command.split('\n')[0], state.redactions), 80)}`);
     } else {
       if (EDIT_TOOLS.has(block.name) && typeof input.file_path === 'string') state.artifacts.add(input.file_path);
       if (!sidechain) pushLine(state.turn, `[tool] ${block.name}`);
