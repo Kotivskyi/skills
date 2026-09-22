@@ -1,0 +1,157 @@
+{
+  "skill_name": "skill-finder",
+  "evals": [
+    {
+      "id": 1,
+      "name": "new-skill-found",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Then find which skills I should create or fix. My Claude Code sessions for this project are in /tmp/skill-finder-world/claude-store. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Look at everything since 2026-08-01. Do not run episode summaries.",
+      "expected_output": "A run folder with evidence, catalog, aggregate, suggestions, and a report. The report ranks a new-skill suggestion for deploying the sim runner, with evidence pointers, and the answer stops at Gate 1.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "A new folder under /tmp/skill-finder-world/project/.skill-finder/runs/ holds evidence.jsonl, catalog.json, aggregate.json, suggestions.json, and report.md",
+        "suggestions.json holds a suggestion with kind new-skill whose title or proposal name mentions the sim runner",
+        "Every evidence entry of that suggestion has a pointer.file under /tmp/skill-finder-world/claude-store and a numeric pointer.line",
+        "The answer shows a table of suggestions and asks the user to pick one suggestion id",
+        "No verify-*.json file exists in the new run folder, and no SKILL.md under /tmp/skill-finder-world changed"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "silent-skill-found",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Some of my installed skills never seem to fire. Check my Claude Code sessions in /tmp/skill-finder-world/claude-store and tell me which skills should have fired, and how to fix them. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries.",
+      "expected_output": "A silent-skill suggestion for write-http-files with the exact old and new description, and no change to the skill.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "suggestions.json holds a suggestion with kind silent-skill and proposal.change.skill equal to write-http-files",
+        "proposal.change.descriptionBefore equals the description in /tmp/skill-finder-world/project/.agents/skills/write-http-files/SKILL.md",
+        "proposal.change.descriptionAfter differs from descriptionBefore",
+        "The write-http-files SKILL.md file is unchanged"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "misfiring-skill-found",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. My release-notes skill keeps going wrong. Look at my Claude Code sessions in /tmp/skill-finder-world/claude-store, find what goes wrong, and suggest a fix. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries.",
+      "expected_output": "A misfiring-skill suggestion for release-notes with a one-line Learnings entry about the package manager.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "suggestions.json holds a suggestion with kind misfiring-skill and proposal.change.skill equal to release-notes",
+        "proposal.change.learningsEntry is one line that starts with a date and mentions pnpm",
+        "At least one evidence quote of that suggestion holds the correction about pnpm and npm",
+        "The release-notes SKILL.md file is unchanged"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "one-off-rejected",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. I rotated the grafana token once. Is that worth a skill? Check my Claude Code sessions in /tmp/skill-finder-world/claude-store. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries.",
+      "expected_output": "No suggestion for the grafana token, with the reason that it occurred in one episode.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "suggestions.json holds no suggestion whose title mentions the grafana token",
+        "The answer says that the grafana token work occurred in one episode, below the rule of 3 episodes on 2 days",
+        "report.md has a Rejected section"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "two-sources-merged",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Find missing skills from both my Claude Code sessions in /tmp/skill-finder-world/claude-store and the OpenSpec archive at /tmp/skill-finder-world/project/openspec/changes/archive. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries.",
+      "expected_output": "The sim runner suggestion cites both sources.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "evidence.jsonl in the new run folder holds episodes with source claude-sessions and episodes with source openspec-archive",
+        "The sim runner suggestion has recurrence.sources with both claude-sessions and openspec-archive",
+        "At least one evidence pointer of that suggestion names a proposal.md file under the OpenSpec archive"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "unreadable-source-stops",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Then find missing skills from my Claude Code sessions in /tmp/skill-finder-world/no-such-store. The project is /tmp/skill-finder-world/project.",
+      "expected_output": "The run stops with a clear message about the missing store and suggests nothing.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "The answer names /tmp/skill-finder-world/no-such-store as missing or unreadable",
+        "No suggestions.json with a non-empty suggestions array exists in a new run folder under /tmp/skill-finder-world/project/.skill-finder/runs/",
+        "The answer suggests no skill"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "previous-run-statuses",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Run skill-finder again for my project and tell me what changed since the last run. My Claude Code sessions are in /tmp/skill-finder-world/claude-store. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries.",
+      "expected_output": "The report gives each earlier suggestion a status: resolved, still-open, or stale.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "aggregate.json in the new run folder has previous.runId equal to 20260901-090000-shop",
+        "previous.statuses gives sf-20260901-01 resolved, sf-20260901-02 still-open, and sf-20260901-03 stale",
+        "report.md has a Previous run section that lists the three ids with their statuses"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "plugin-origin-not-edited",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. The changelog-writer skill from acme-tools keeps getting the changelog format wrong. Find the fix in my Claude Code sessions in /tmp/skill-finder-world/claude-store. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries. At Gate 1 I pick the changelog-writer suggestion. At Gate 2 I say yes.",
+      "expected_output": "The Learnings edit is staged in the run folder, the plugin copy stays unchanged, and the answer names the upstream path.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "/tmp/skill-finder-world/home/.claude/plugins/cache/acme/acme-tools/1.0.0/skills/changelog-writer/SKILL.md is unchanged",
+        "An apply-<id> folder in the new run folder holds a SKILL.md with a Learnings entry about the keep a changelog format",
+        "The answer names the upstream path of the plugin skill and says that the edit is staged, not applied",
+        "The harvested evals are in the evals-<id> folder of the run, and no evals file under /tmp/skill-finder-world/home changed"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "verify-failure-blocks-gate2",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Then continue the skill-finder run in /tmp/skill-finder-world/project/.skill-finder/prepared/20260922-100000-moved. I pick suggestion sf-20260922-01.",
+      "expected_output": "Verify blocks on the moved pointer, the answer reports the failed check, and there is no Gate 2 brief.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "verify-sf-20260922-01.json exists in the prepared run folder with status blocked",
+        "Its checks.pointersResolve.pass is false",
+        "The answer reports the failed pointer check and gives no Gate 2 brief",
+        "No evals-sf-20260922-01 folder exists"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "harvest-reaches-target",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Find missing skills from my Claude Code sessions in /tmp/skill-finder-world/claude-store and the OpenSpec archive at /tmp/skill-finder-world/project/openspec/changes/archive. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries. At Gate 1 I pick the sim runner suggestion. Build its evals and stop at Gate 2.",
+      "expected_output": "At least 50 real eval cases with no synthetic entries, and a Gate 2 brief.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "harvest.json in the evals-<id> folder shows real.total of 50 or more and synthetic.total of 0",
+        "trigger-eval.json holds at least 20 entries with should_trigger true and at least 20 with should_trigger false",
+        "evals.json holds at least 10 cases, and each case has a non-empty expected_output and at least one expectation",
+        "Every entry in trigger-eval.provenance.json has origin real",
+        "The answer shows a Gate 2 brief and asks for an explicit yes"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "harvest-reports-shortfall",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Find which of my skills should have fired but did not. My Claude Code sessions are in /tmp/skill-finder-world/claude-store. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Do not run episode summaries. At Gate 1 I pick the write-http-files suggestion. Build its evals and stop at Gate 2.",
+      "expected_output": "Fewer real cases than the target, marked synthetic cases, and a brief that states the shortfall.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "harvest.json in the evals-<id> folder shows shortfall.total greater than 0",
+        "trigger-eval.provenance.json holds entries with origin synthetic, and each synthetic entry has episodeId null",
+        "The Gate 2 brief states the real case count and the shortfall"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "no-summary-backend-fallback",
+      "prompt": "First run `node evals/fixtures/make-world.mjs /tmp/skill-finder-world` from the skill folder. Find missing skills from my Claude Code sessions in /tmp/skill-finder-world/claude-store. The project is /tmp/skill-finder-world/project and my home folder is /tmp/skill-finder-world/home. Shunt is not installed here, and you must not start subagents.",
+      "expected_output": "The run continues on heuristics and the report says that summaries were skipped.",
+      "files": ["evals/fixtures/make-world.mjs"],
+      "expectations": [
+        "run.json in the new run folder has summaryBackend none",
+        "The Limitations section of report.md says that episode summaries were skipped, and why",
+        "suggestions.json holds at least one suggestion"
+      ]
+    }
+  ]
+}
