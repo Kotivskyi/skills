@@ -113,7 +113,7 @@ function handleUser(record, lineNo, file, state) {
   const text = redact(cleaned.text, state.redactions).trim();
   if (!text && !cleaned.command) return;
   state.userMessages += 1;
-  state.turn = { user: text || cleaned.command, lines: [], finalText: '' };
+  state.turn = { user: truncate(text, 600) || cleaned.command, lines: [], finalText: '' };
   state.turns.push(state.turn);
   if (!text) return;
   const entry = { text: truncate(text, 600), pointer: { file, line: lineNo } };

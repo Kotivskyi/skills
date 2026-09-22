@@ -194,3 +194,18 @@ test('a compact-summary user record is not a human intent', () => {
     assert.equal(text.includes('being continued from a previous conversation'), false);
   }
 });
+
+test('a digest user turn is at most 600 characters', () => {
+  const prompt = 'plan the herd rotation for the north pasture group '.repeat(46).slice(0, 2300);
+  assert.equal(prompt.length, 2300);
+  const store = writeSession('55555555-5555-4555-8555-555555555555', [
+    { type: 'user', message: { role: 'user', content: prompt }, origin: { kind: 'human' } }
+  ]);
+  const runDir = tmpDir();
+  const result = runScript('extract-claude-sessions.mjs', ['--store', store, '--out', runDir]);
+  assert.equal(result.status, 0, result.stderr);
+  const digest = readFileSync(path.join(runDir, evidence(runDir)[0].digest), 'utf8');
+  const userLines = digest.split('\n').filter((line) => line.startsWith('user: '));
+  assert.equal(userLines.length, 1);
+  assert.ok(userLines[0].length <= 606, `user line has ${userLines[0].length} characters`);
+});
