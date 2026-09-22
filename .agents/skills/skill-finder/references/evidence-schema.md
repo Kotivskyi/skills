@@ -84,4 +84,4 @@ Every extractor and digest writer applies these rules. `redactions` counts them.
 | `authorization` | `Bearer <token>` |
 | `private_url` | URLs on `private`, `internal`, or `*.internal` hosts |
 | `email` | Email addresses |
-| `long_token` | Hex runs of 32 or more characters. Base64 runs of 32 or more characters that mix uppercase letters, lowercase letters, and digits and do not look like a path. |
+| `long_token` | Hex runs of 32 or more characters. Base64 runs of 32 or more characters that mix uppercase letters, lowercase letters, and digits. A base64 run that looks like a path does not match. |

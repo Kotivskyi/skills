@@ -89,7 +89,7 @@ Read [references/summary-schema.md](references/summary-schema.md). Then run:
 node "${CLAUDE_SKILL_DIR}/scripts/check-summaries.mjs" --run <run> --plan
 ```
 
-Tell the user the digest count, the total size, and the call count. Ask for a yes. On a no, or when no backend is available, run the next command and go to step 7:
+Tell the user the digest count, the total size, and the call count. Ask for a yes. A run without summaries finds much less, because task keys then come only from titles and corrections. When the user says no, tell them this. On a no, or when no backend is available, run the next command and go to step 7:
 
 ```bash
 node "${CLAUDE_SKILL_DIR}/scripts/merge-summaries.mjs" --run <run> --backend none
@@ -114,7 +114,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/audit-evidence.mjs" <run>/evidence.jsonl --exp
 node "${CLAUDE_SKILL_DIR}/scripts/aggregate.mjs" --run <run> --previous auto
 ```
 
-When `candidates` is 0, write `suggestions.json` with an empty `suggestions` array, and write a `report.md` that says no candidate passed the rule. Show the result and stop.
+When `candidates` is 0, write `suggestions.json` with an empty `suggestions` array. Then write a `report.md` that says no candidate passed the rule. Show the result and stop.
 
 ### 8. Judge
 

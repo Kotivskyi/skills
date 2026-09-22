@@ -2,7 +2,7 @@
 
 ## Location
 
-`~/.claude/projects/<encoded-cwd>/`. The encoded name is the absolute project path with each character that is not a letter or a digit replaced by `-`. For example, `/Users/me.name/work/app` becomes `-Users-me-name-work-app`.
+`~/.claude/projects/<encoded-cwd>/`. To get the encoded name, take the absolute project path. Replace each character that is not a letter or a digit with `-`. For example, `/Users/me.name/work/app` becomes `-Users-me-name-work-app`.
 
 Flags:
 
@@ -61,7 +61,7 @@ Flags:
 - One line can be 50 MB, usually a tool result. The extractor skips lines that hold `"type":"tool_result"` before `JSON.parse`.
 - A session can span days. `days` lists each day with activity.
 - A session file can change after its last prompt. The `--since` filter first skips files whose modified time is before the window, then checks `startedAt`.
-- In a real store of 164 sessions and 846 MB, the extractor ran in about 2.5 seconds with about 170 MB of memory.
+- One real store had 164 sessions and 846 MB. The extractor read it in about 2.5 seconds and used about 170 MB of memory.
 
 ## Privacy
 

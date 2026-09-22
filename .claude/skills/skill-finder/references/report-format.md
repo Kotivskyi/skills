@@ -111,4 +111,4 @@ Never invoked in this window: <names>.
 - The run folder holds redacted work history. Keep it out of git.
 ```
 
-When no candidate passes, write the header, a line that says no candidate passed the rule, and the Previous run, Catalog usage, Rejected, and Limitations sections.
+When no candidate passes, write the header and a line that says no candidate passed the rule. Then write the Previous run, Catalog usage, Rejected, and Limitations sections.

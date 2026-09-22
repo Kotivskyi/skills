@@ -9,7 +9,7 @@ A `misfiring-skill` fix adds one line to the `## Learnings` section of the targe
 - The entry has a date, then two sentences, then the evidence. The first sentence states what the agent did wrong. The second sentence states what to do.
 - Use ASD-STE100: short sentences, active voice.
 - Do not copy a raw quote. Paraphrase.
-- When the section has more than 15 entries, ask the user to fold the entries into the body of the skill.
+- When the section has more than 15 entries, ask the user to fold them into the skill body.
 
 ## Format
 
