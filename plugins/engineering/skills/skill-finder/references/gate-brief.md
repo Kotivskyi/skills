@@ -39,8 +39,6 @@ The exact change for each kind:
 | Kind | Rollback |
 | :--- | :--- |
 | `new-skill` | Remove the new skill folder. |
-| `silent-skill` | `git checkout -- <SKILL.md> <evals files>` in the repo that owns the skill. |
-| `misfiring-skill` | `git checkout -- <SKILL.md> <evals files>` in the repo that owns the skill. |
+| `silent-skill` | Restore the files from `<run>/apply-<id>/backup/` into the skill folder. Delete the files that the apply created: <list them>. `<run>/apply-<id>/created.txt` also lists them. |
+| `misfiring-skill` | Restore the files from `<run>/apply-<id>/backup/` into the skill folder. Delete the files that the apply created: <list them>. `<run>/apply-<id>/created.txt` also lists them. |
 | Plugin origin | Remove `<run>/apply-<id>/`. Nothing else changed. |
-
-When the skill folder is not in git, copy the files to `<run>/apply-<id>/backup/` before the edit, and give the copy as the rollback.

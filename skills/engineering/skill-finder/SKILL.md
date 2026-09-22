@@ -156,6 +156,12 @@ Write the brief in the format of the gate reference. Ask for an explicit yes. St
 
 Apply only after an explicit yes. Follow a symlink to the real file, and tell the user the real path.
 
+Before you change a file in a `repo` or `user` skill, do these steps in this order:
+
+1. For `silent-skill`, compare the current `description` with `descriptionBefore`. When they are different, stop. Tell the user that the skill changed after the run.
+2. Copy each file that the apply will change to `<run>/apply-<id>/backup/`. Keep each path relative to the skill folder.
+3. Write the path of each file that the apply will create to `<run>/apply-<id>/created.txt`, one path on each line.
+
 | Kind | Origin `repo` or `user` | Origin `plugin` |
 | :--- | :--- | :--- |
 | `new-skill` | Invoke `skill-creator` with the brief. When the skill folder exists, merge the evals into its `evals/` folder. | Not used. |

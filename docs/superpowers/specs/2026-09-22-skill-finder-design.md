@@ -403,7 +403,7 @@ The skill presents a brief in the shape of `references/gate-brief.md` and stops 
 - the verify result;
 - the harvest counts: real, synthetic, shortfall;
 - the exact change, which is the `skill-creator` handoff for `new-skill`, the description diff for `silent-skill`, or the Learnings entry for `misfiring-skill`;
-- risks and rollback, which is `git checkout` of the touched files or removal of the new skill folder.
+- risks and rollback, which restores the files from `apply-<id>/backup/` and deletes the files that the apply created, or removes the new skill folder.
 
 ### Apply rules
 
@@ -411,6 +411,7 @@ The skill presents a brief in the shape of `references/gate-brief.md` and stops 
 - `silent-skill`: replace the description in `SKILL.md`. Merge the trigger set into the skill's `evals/trigger-eval.json`.
 - `misfiring-skill`: append the entry under `## Learnings`. Merge the behavior cases into the skill's `evals/evals.json`.
 - Only skills with origin `repo` or `user` are edited. A symlink is followed to its target, and the skill says so.
+- Before an edit, the skill copies each file that will change to `apply-<id>/backup/` and lists the files it will create. For `silent-skill`, it stops when the current description is not `descriptionBefore`.
 - A plugin-origin skill is never edited. The staged edit goes to `apply-<id>/` in the run folder, and the report names the upstream path.
 - No commit, push, or merge. The skill lists the touched files and stops.
 
