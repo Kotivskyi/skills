@@ -53,9 +53,11 @@ export function isRepeatedInstruction(text) {
   return text.length >= 80 && REPEATED_PATTERNS.some((pattern) => pattern.test(text));
 }
 
-// Only text a human typed. Skill bodies (isMeta), task notifications, and tool results are not intents.
+// Only text a human typed. Skill bodies (isMeta), task notifications, tool results,
+// and the summary Claude Code writes after a compaction are not intents.
 function humanText(record) {
   if (record.isMeta) return null;
+  if (record.isCompactSummary || record.isVisibleInTranscriptOnly) return null;
   const kind = record.origin?.kind;
   if (kind && kind !== 'human') return null;
   const content = record.message?.content;

@@ -33,6 +33,7 @@ Flags:
 | String content, or text blocks, with `origin.kind` of `human` or no `origin` | Yes |
 | Content with a `tool_result` block | No |
 | `isMeta: true` (a skill body that Claude Code injects) | No |
+| `isCompactSummary: true` or `isVisibleInTranscriptOnly: true` (a summary that Claude Code writes after compaction) | No |
 | `origin.kind` of `task-notification`, `peer`, or `auto-continuation` | No |
 | Text that starts with `<local-command-caveat>`, `<local-command-stdout>`, `<bash-input>`, `<bash-stdout>`, or `<task-notification>` | No |
 | `<command-name>/x</command-name>` | Adds `/x` to `commandsUsed`. The `<command-args>` text is the intent. |

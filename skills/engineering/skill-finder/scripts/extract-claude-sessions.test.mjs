@@ -157,3 +157,40 @@ test('correction and repeated-instruction heuristics', () => {
   assert.equal(isRepeatedInstruction('always run the tests'), false);
   assert.equal(isRepeatedInstruction(`Remember to always run the contracts check before you deploy anything to staging, every time.`), true);
 });
+
+// Writes one session file into a new temporary store. Each row gets the common record fields.
+function writeSession(sessionId, rows) {
+  const store = tmpDir();
+  const lines = rows.map((row, index) => JSON.stringify({
+    parentUuid: index ? `r${index - 1}` : null,
+    isSidechain: false,
+    uuid: `r${index}`,
+    timestamp: `2026-09-05T10:${String(index).padStart(2, '0')}:00.000Z`,
+    cwd: '/work/app',
+    sessionId,
+    ...row
+  }));
+  writeFileSync(path.join(store, `${sessionId}.jsonl`), `${lines.join('\n')}\n`);
+  return store;
+}
+
+test('a compact-summary user record is not a human intent', () => {
+  const summary = 'No, that is wrong. This session is being continued from a previous conversation. Always run the contracts check before you deploy anything, and never skip it.';
+  const store = writeSession('44444444-4444-4444-8444-444444444444', [
+    { type: 'user', message: { role: 'user', content: 'Add a health check to the sim runner.' }, origin: { kind: 'human' } },
+    { type: 'assistant', message: { id: 'm1', role: 'assistant', content: [{ type: 'text', text: 'Working on it.' }] } },
+    { type: 'user', message: { role: 'user', content: summary }, isCompactSummary: true, isVisibleInTranscriptOnly: true }
+  ]);
+  const runDir = tmpDir();
+  const result = runScript('extract-claude-sessions.mjs', ['--store', store, '--out', runDir]);
+  assert.equal(result.status, 0, result.stderr);
+  const [record] = evidence(runDir);
+  assert.equal(record.intents.length, 1);
+  assert.deepEqual(record.userCorrections, []);
+  assert.deepEqual(record.repeatedInstructions, []);
+  const serialized = readFileSync(path.join(runDir, 'evidence.jsonl'), 'utf8');
+  const digest = readFileSync(path.join(runDir, record.digest), 'utf8');
+  for (const text of [serialized, digest]) {
+    assert.equal(text.includes('being continued from a previous conversation'), false);
+  }
+});
