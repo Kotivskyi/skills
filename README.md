@@ -48,6 +48,7 @@ npx skills@latest add kotivskyi/skills
 | [plan](./skills/engineering/plan/SKILL.md) | Break down a feature or task into an approved implementation plan before touching code. |
 | [pr-watch](./skills/engineering/pr-watch/SKILL.md) | Drive a GitHub PR to fully green checks and fully addressed review threads, or exit with a precise blocker. |
 | [ship](./skills/engineering/ship/SKILL.md) | Pre-merge go/no-go checklist: CI, reviews, migrations, env vars, secrets scan. |
+| [skill-finder](./skills/engineering/skill-finder/SKILL.md) | Find which skills to create or fix from real work history. Mine Claude Code sessions and OpenSpec archives, rank suggestions by frequency and cost, and apply one with harvested evals after two approvals. |
 | [tdd](./skills/engineering/tdd/SKILL.md) | Test-driven development via vertical tracer-bullet slices (one test → one impl → repeat); tests verify behavior through public interfaces. Bundled dependency of `fix-with-spec` (adapted from mattpocock/skills, MIT). |
 | [write-http-files](./skills/engineering/write-http-files/SKILL.md) | Author runnable `.http` / `.rest` request files (JetBrains HTTP Client / VS Code REST Client format) with variables, environments, and response chaining. |
 
@@ -55,7 +56,7 @@ See [CLAUDE.md](./CLAUDE.md) for governance rules (how to add, change, or remove
 
 ## Plugins
 
-[Engineering](./plugins/engineering/README.md) contains all 16 active engineering skills and their support files.
+[Engineering](./plugins/engineering/README.md) contains all 17 active engineering skills and their support files.
 Its `skills/` directory uses the [standard Claude Code plugin layout](https://code.claude.com/docs/en/plugins).
 Use `/engineering:plan`, `/engineering:pr-watch`, or `/engineering:handoff` after installation.
 

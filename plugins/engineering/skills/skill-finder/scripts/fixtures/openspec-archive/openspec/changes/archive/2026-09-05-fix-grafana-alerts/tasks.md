@@ -1,0 +1,3 @@
+- [x] 1.1 Merge duplicate rules
+- [ ] 1.2 Move the token
+- [x] 1.3 Run `pnpm test`

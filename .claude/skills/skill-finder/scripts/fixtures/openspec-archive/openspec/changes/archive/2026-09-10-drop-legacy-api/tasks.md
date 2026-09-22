@@ -1,0 +1,2 @@
+- [ ] 1.1 Remove the routes
+- [ ] 1.2 Remove the tests

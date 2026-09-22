@@ -23,7 +23,7 @@ Both provide the same engineering skills and SessionStart hook.
 
 ## Contents
 
-The package includes all 16 skills listed in the [engineering catalog](../../skills/engineering/README.md).
+The package includes all 17 skills listed in the [engineering catalog](../../skills/engineering/README.md).
 Each skill includes its scripts, references, and assets under `skills/<name>/`.
 The package needs no files outside this directory when Claude Code loads it.
 

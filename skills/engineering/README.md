@@ -25,5 +25,6 @@ Daily code and PR work.
 | [plan](./plan/SKILL.md) | Break down a feature or task into an approved implementation plan before touching code. |
 | [pr-watch](./pr-watch/SKILL.md) | Drive a GitHub PR to fully green checks and fully addressed review threads, or exit with a precise blocker. |
 | [ship](./ship/SKILL.md) | Pre-merge go/no-go checklist: CI, reviews, migrations, env vars, secrets scan. |
+| [skill-finder](./skill-finder/SKILL.md) | Find which skills to create or fix from real work history. Mine Claude Code sessions and OpenSpec archives, rank suggestions by frequency and cost, and apply one with harvested evals after two approvals. |
 | [tdd](./tdd/SKILL.md) | Test-driven development via vertical tracer-bullet slices (one test → one impl → repeat); tests verify behavior through public interfaces. Bundled dependency of `fix-with-spec` (adapted from mattpocock/skills, MIT). |
 | [write-http-files](./write-http-files/SKILL.md) | Author runnable `.http` / `.rest` request files (JetBrains HTTP Client / VS Code REST Client format) with variables, environments, and response chaining. |
