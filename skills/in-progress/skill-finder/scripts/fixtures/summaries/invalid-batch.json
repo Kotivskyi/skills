@@ -1,0 +1,46 @@
+[
+  {
+    "episodeId": "claude-sessions:ep-3",
+    "goal": "Rename a module",
+    "outcome": "done",
+    "procedures": [],
+    "corrections": [],
+    "repeatedManualSteps": [],
+    "skillCandidates": [],
+    "skillsThatShouldHaveFired": [],
+    "confidence": "high"
+  },
+  {
+    "episodeId": "claude-sessions:ep-99",
+    "goal": "Unknown episode",
+    "outcome": "unknown",
+    "procedures": [],
+    "corrections": [],
+    "repeatedManualSteps": [],
+    "skillCandidates": [],
+    "skillsThatShouldHaveFired": [],
+    "confidence": "low"
+  },
+  {
+    "episodeId": "claude-sessions:ep-1",
+    "goal": "First copy",
+    "outcome": "completed",
+    "procedures": [],
+    "corrections": [],
+    "repeatedManualSteps": [],
+    "skillCandidates": [],
+    "skillsThatShouldHaveFired": [],
+    "confidence": "high"
+  },
+  {
+    "episodeId": "claude-sessions:ep-1",
+    "goal": "Second copy",
+    "outcome": "completed",
+    "procedures": [],
+    "corrections": [],
+    "repeatedManualSteps": [],
+    "skillCandidates": [],
+    "skillsThatShouldHaveFired": [],
+    "confidence": "high"
+  }
+]

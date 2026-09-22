@@ -1,0 +1,29 @@
+Here are the summaries:
+[
+  {
+    "episodeId": "claude-sessions:ep-1",
+    "goal": "Deploy the sim runner to staging",
+    "outcome": "completed",
+    "procedures": [
+      { "name": "deploy sim runner", "steps": ["run the tests", "run the deploy script", "check the dashboards"], "taughtByUser": true }
+    ],
+    "corrections": [
+      { "what": "agent used npm", "cause": "did not read the lockfile", "fix": "use pnpm" }
+    ],
+    "repeatedManualSteps": ["check the grafana dashboards"],
+    "skillCandidates": [ { "name": "deploy-sim-runner", "why": "the same steps every week" } ],
+    "skillsThatShouldHaveFired": [],
+    "confidence": "high"
+  },
+  {
+    "episodeId": "claude-sessions:ep-2",
+    "goal": "Fix a flaky migration test",
+    "outcome": "partial",
+    "procedures": [],
+    "corrections": [],
+    "repeatedManualSteps": [],
+    "skillCandidates": [],
+    "skillsThatShouldHaveFired": [ { "name": "diagnosing-bugs", "why": "a flaky test was debugged by hand" } ],
+    "confidence": "medium"
+  }
+]
