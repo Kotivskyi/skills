@@ -121,6 +121,7 @@ async function main(argv) {
     size: { type: 'number', default: BATCH_SIZE }
   });
   if (!values.run) throw new UsageError('--run <dir> is required');
+  if (!Number.isInteger(values.size) || values.size < 1) throw new UsageError(`--size needs an integer of 1 or more, got ${values.size}`);
   const runDir = path.resolve(values.run);
   if (values.plan) {
     emit(await plan(runDir, values.size));

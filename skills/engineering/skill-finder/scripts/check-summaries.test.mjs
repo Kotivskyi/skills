@@ -81,3 +81,14 @@ test('valid batches can be copied in as batch files', () => {
   const result = runScript('check-summaries.mjs', ['--run', dir, '--batch', path.join(dir, 'summaries', 'batch-01.json')]);
   assert.equal(result.status, 0);
 });
+
+test('--size must be an integer of 1 or more', () => {
+  const dir = tmpDir();
+  const files = { 'digests/claude-sessions__ep-1.md': '# Episode 1\n', 'digests/claude-sessions__ep-2.md': '# Episode 2\n' };
+  writeRun(dir, { episodes: [1, 2].map((n) => makeEpisode({ n, digest: `digests/claude-sessions__ep-${n}.md` })), files });
+  for (const size of ['0', '-1', '1.5']) {
+    const result = runScript('check-summaries.mjs', ['--run', dir, '--plan', '--size', size], { timeout: 5000 });
+    assert.equal(result.status, 1, `--size ${size}: status ${result.status}, signal ${result.signal ?? 'none'}`);
+    assert.match(result.stderr, /--size/);
+  }
+});
