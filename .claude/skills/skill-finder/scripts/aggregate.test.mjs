@@ -289,3 +289,25 @@ test('no previous run gives previous: null', () => {
 test('missing evidence exits 2', () => {
   assert.equal(runScript('aggregate.mjs', ['--run', tmpDir()]).status, 2);
 });
+
+test('a user-invoked skill never gives silent-skill', () => {
+  const catalog = makeCatalog([
+    catalogEntry({
+      name: 'http-writer',
+      invocation: 'user',
+      description: 'Write HTTP request files for an API. Use when the user wants request files.',
+      triggers: ['wants request files']
+    })
+  ]);
+  const episodes = [
+    ep(4, '05', { title: 'Write HTTP request files for the devices API' }),
+    ep(5, '06', { title: 'Write HTTP request files for the herds API' }),
+    ep(6, '07', { title: 'Write HTTP request files for the plans API' })
+  ];
+  const http = byEpisodes(aggregate({ episodes, catalog }), 'claude-sessions:ep-4');
+  assert.equal(http.preMatch[0].qualifiedName, 'http-writer');
+  assert.ok(http.preMatch[0].overlap >= 0.3);
+  assert.equal(http.preMatch[0].invokedInEpisodes, 0);
+  assert.equal(http.kindHint, 'new-skill');
+  assert.equal(http.kindTarget, null);
+});

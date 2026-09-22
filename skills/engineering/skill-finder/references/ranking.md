@@ -59,7 +59,7 @@ For each candidate, the index lists the 3 catalog skills with the highest overla
 Apply the first rule that matches:
 
 1. `misfiring-skill`: a skill S fired in at least `minEpisodes` of the candidate's corrected episodes, and S's rate in those episodes is at least 2 times S's firing rate in the run. The run rate counts only episodes from sources that record invocations.
-2. `silent-skill`: a pre-match skill has overlap 0.3 or more, or is named, and fired in none of the candidate's episodes.
+2. `silent-skill`: a pre-match skill has overlap 0.3 or more, or is named, and fired in none of the candidate's episodes. Skip a skill with `invocation: 'user'`. It cannot fire by itself, so a description edit does not help.
 3. `new-skill`: all other candidates.
 
 The hint is a start. In the judgment step, change it when the evidence says so, and write the reason.

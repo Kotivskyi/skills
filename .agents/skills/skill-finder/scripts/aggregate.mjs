@@ -159,7 +159,8 @@ function invokedSkills(episodes, resolve) {
   return invoked;
 }
 
-export function kindHintFor(preMatch, invoked, minEpisodes, rates = new Map(), correctedEpisodes = 0) {
+// userInvoked: qualified names of user-invoked skills. They cannot fire by themselves, so they are never silent.
+export function kindHintFor(preMatch, invoked, minEpisodes, rates = new Map(), correctedEpisodes = 0, userInvoked = new Set()) {
   const misfire = [...invoked]
     .filter(([, stats]) => correctedEpisodes > 0 && stats.correctedEpisodes >= minEpisodes)
     .map(([name, stats]) => ({ name, stats, lift: stats.correctedEpisodes / correctedEpisodes / (rates.get(name) || 1) }))
@@ -172,7 +173,9 @@ export function kindHintFor(preMatch, invoked, minEpisodes, rates = new Map(), c
       kindReason: `${misfire.name} fired in ${misfire.stats.correctedEpisodes} of ${correctedEpisodes} corrected episodes, ${Math.round(misfire.lift * 10) / 10} times its rate in the run`
     };
   }
-  const silent = preMatch.find((match) => (match.overlap >= SILENT_OVERLAP || match.named) && match.invokedInEpisodes === 0);
+  const silent = preMatch.find(
+    (match) => (match.overlap >= SILENT_OVERLAP || match.named) && match.invokedInEpisodes === 0 && !userInvoked.has(match.qualifiedName)
+  );
   if (silent) {
     return {
       kindHint: 'silent-skill',
@@ -185,7 +188,7 @@ export function kindHintFor(preMatch, invoked, minEpisodes, rates = new Map(), c
   return {
     kindHint: 'new-skill',
     kindTarget: null,
-    kindReason: 'no catalog skill overlaps 0.3 or more without firing, and none fired with repeated corrections'
+    kindReason: 'no model-invoked catalog skill overlaps 0.3 or more without firing, and none fired with repeated corrections'
   };
 }
 
@@ -219,6 +222,7 @@ function buildCandidate(cluster, members, days, context) {
     const hit = scored.find((item) => item.entry.qualifiedName === qualifiedName);
     if (hit) picked.push(hit);
   }
+  const userInvoked = new Set(picked.filter(({ entry }) => entry.invocation === 'user').map(({ entry }) => entry.qualifiedName));
   const preMatch = picked.map(({ entry, overlap: value }) => ({
     qualifiedName: entry.qualifiedName,
     origin: entry.origin,
@@ -237,7 +241,7 @@ function buildCandidate(cluster, members, days, context) {
     episodeIds: cluster.taskEpisodeIds,
     commandEpisodes: cluster.episodeIds.length - cluster.taskEpisodeIds.length,
     cost: { median: costMedian, score: members.length * costMedian, corrections },
-    ...kindHintFor(preMatch, invoked, minEpisodes, rates, correctedEpisodes),
+    ...kindHintFor(preMatch, invoked, minEpisodes, rates, correctedEpisodes, userInvoked),
     preMatch,
     invoked: [...invoked]
       .map(([qualifiedName, stats]) => ({ qualifiedName, ...stats }))
