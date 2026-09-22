@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { runScript, tmpDir } from './lib/testing.mjs';
 import { buildCatalogFixture, writeSkill } from './fixtures/catalog/build.mjs';
@@ -109,4 +109,58 @@ test('parseFrontmatter reads plain, quoted, and block values', () => {
 test('extractTriggers splits clauses and keeps 2 to 12 words', () => {
   const triggers = extractTriggers('Review code. Use this when the user asks for a review, wants feedback; or pastes a diff. Trigger on "lgtm?".');
   assert.deepEqual(triggers, ['asks for a review', 'wants feedback', 'pastes a diff']);
+});
+
+// A home with installed plugins only. installs maps a plugin key to { skills, manifest }.
+function pluginHome(installs, { raw } = {}) {
+  const root = tmpDir();
+  const home = path.join(root, 'home');
+  const plugins = {};
+  for (const [key, { skills, manifest }] of Object.entries(installs)) {
+    const installPath = path.join(home, '.claude', 'plugins', 'cache', 'acme', key.split('@')[0], '1.0.0');
+    for (const rel of skills) {
+      const name = path.basename(rel);
+      writeSkill(path.join(installPath, rel), { name, description: `The ${name} skill. Use when the user asks for ${name} work.` });
+    }
+    if (manifest !== undefined) {
+      mkdirSync(path.join(installPath, '.claude-plugin'), { recursive: true });
+      writeFileSync(path.join(installPath, '.claude-plugin', 'plugin.json'), typeof manifest === 'string' ? manifest : JSON.stringify(manifest));
+    }
+    plugins[key] = [{ scope: 'user', installPath, version: '1.0.0' }];
+  }
+  mkdirSync(path.join(home, '.claude', 'plugins'), { recursive: true });
+  writeFileSync(path.join(home, '.claude', 'plugins', 'installed_plugins.json'), raw ?? JSON.stringify({ version: 2, plugins }));
+  const out = path.join(root, 'catalog.json');
+  const result = runScript('index-catalog.mjs', ['--cwd', path.join(root, 'project'), '--home', home, '--out', out]);
+  assert.equal(result.status, 0, result.stderr);
+  return { result, catalog: JSON.parse(readFileSync(out, 'utf8')) };
+}
+
+test('plugin skills come from the manifest skills list, or from skills/ when it lists none', () => {
+  const { catalog, result } = pluginHome({
+    'alpha-tools@acme': { skills: ['skills/engineering/alpha'], manifest: { name: 'alpha-tools', skills: ['./skills/engineering/alpha'] } },
+    'beta-tools@acme': { skills: ['skills/beta'] }
+  });
+  assert.deepEqual(catalog.skills.map((skill) => [skill.qualifiedName, skill.origin]), [
+    ['alpha-tools:alpha', 'plugin'],
+    ['beta-tools:beta', 'plugin']
+  ]);
+  assert.deepEqual(catalog.warnings, []);
+  assert.equal(result.summary.warnings, 0);
+});
+
+test('a malformed installed_plugins.json gives no plugin skills and one warning', () => {
+  const { catalog, result } = pluginHome({ 'beta-tools@acme': { skills: ['skills/beta'] } }, { raw: '{ not json' });
+  assert.equal(catalog.skills.filter((skill) => skill.origin === 'plugin').length, 0);
+  assert.equal(catalog.warnings.length, 1);
+  assert.match(catalog.warnings[0], /installed_plugins\.json/);
+  assert.equal(result.summary.warnings, 1);
+});
+
+test('a malformed plugin.json gives one warning and falls back to skills/', () => {
+  const { catalog, result } = pluginHome({ 'gamma-tools@acme': { skills: ['skills/gamma'], manifest: '{ not json' } });
+  assert.deepEqual(catalog.skills.map((skill) => skill.qualifiedName), ['gamma-tools:gamma']);
+  assert.equal(catalog.warnings.length, 1);
+  assert.match(catalog.warnings[0], /plugin\.json/);
+  assert.equal(result.summary.warnings, 1);
 });

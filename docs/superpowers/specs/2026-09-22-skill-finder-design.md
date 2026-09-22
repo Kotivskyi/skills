@@ -260,11 +260,13 @@ Default roots, in priority order:
 | :--- | :--- |
 | `repo` | `<cwd>/.agents/skills`, `<cwd>/.claude/skills` |
 | `user` | `~/.claude/skills`, `~/.agents/skills` |
-| `plugin` | each `installPath/skills/*/SKILL.md` from `~/.claude/plugins/installed_plugins.json` |
+| `plugin` | for each install in `~/.claude/plugins/installed_plugins.json`, each plugin's skills — the folders its `.claude-plugin/plugin.json` lists in `skills`, or `installPath/skills/*/SKILL.md` when it lists none |
 
 Extra `--root` folders get origin `repo`.
 
 Each entry: `name`, `namespace` for plugins, `qualifiedName`, `description`, `triggers`, `invocation` from `disable-model-invocation`, `path`, `realPath`, `origin`, `plugin`, `aliases`.
+
+`catalog.json` also has `warnings`. It holds one message for each `installed_plugins.json` or `plugin.json` that does not parse.
 
 Dedup is by `realPath`, because user skills are often symlinks into a repo. The highest-priority origin wins. The other paths go into `aliases`.
 

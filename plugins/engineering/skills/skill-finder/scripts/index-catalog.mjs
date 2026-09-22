@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Indexes the installed skill catalog: repo, user, and plugin roots.
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { UsageError, emit, isMain, parseCli, runMain } from './lib/args.mjs';
@@ -80,42 +80,75 @@ export function extractTriggers(description) {
   return triggers;
 }
 
-function pluginRoots(home) {
+function childDirs(dir) {
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() || entry.isSymbolicLink())
+    .map((entry) => path.join(dir, entry.name));
+}
+
+// The skill folders that <installPath>/.claude-plugin/plugin.json lists in `skills`.
+// null means: use the default skills/*/SKILL.md scan.
+function manifestSkillDirs(installPath, warnings) {
+  const file = path.join(installPath, '.claude-plugin', 'plugin.json');
+  if (!existsSync(file)) return null;
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    warnings.push(`cannot parse ${file}`);
+    return null;
+  }
+  const listed = [].concat(manifest?.skills ?? []).filter((entry) => typeof entry === 'string');
+  const found = listed.map((entry) => path.resolve(installPath, entry)).filter((dir) => existsSync(dir));
+  // Claude Code runs the default scan when none of the listed paths exist.
+  if (!found.length) return null;
+  // An entry is a skill folder, or a folder of skill folders.
+  return found.flatMap((dir) => {
+    if (existsSync(path.join(dir, 'SKILL.md'))) return [dir];
+    return statSync(dir).isDirectory() ? childDirs(dir) : [];
+  });
+}
+
+function pluginRoots(home, warnings) {
   const file = path.join(home, '.claude', 'plugins', 'installed_plugins.json');
   if (!existsSync(file)) return [];
   let data;
   try {
     data = JSON.parse(readFileSync(file, 'utf8'));
   } catch {
+    warnings.push(`cannot parse ${file}`);
     return [];
   }
   const roots = [];
-  for (const [key, installs] of Object.entries(data.plugins ?? {})) {
+  for (const [key, installs] of Object.entries(data?.plugins ?? {})) {
     for (const install of [].concat(installs)) {
       if (!install?.installPath) continue;
-      roots.push({ path: path.join(install.installPath, 'skills'), origin: 'plugin', plugin: key, namespace: key.split('@')[0] });
+      const namespace = key.split('@')[0];
+      const skillDirs = manifestSkillDirs(install.installPath, warnings);
+      if (skillDirs) roots.push({ path: install.installPath, skillDirs, origin: 'plugin', plugin: key, namespace });
+      else roots.push({ path: path.join(install.installPath, 'skills'), origin: 'plugin', plugin: key, namespace });
     }
   }
   return roots;
 }
 
 // Order is priority: repo, then user, then plugin.
-export function catalogRoots({ cwd, home, extraRoots = [], plugins = true }) {
+export function catalogRoots({ cwd, home, extraRoots = [], plugins = true, warnings = [] }) {
   return [
     { path: path.join(cwd, '.agents', 'skills'), origin: 'repo' },
     { path: path.join(cwd, '.claude', 'skills'), origin: 'repo' },
     ...extraRoots.map((root) => ({ path: path.resolve(cwd, root), origin: 'repo' })),
     { path: path.join(home, '.claude', 'skills'), origin: 'user' },
     { path: path.join(home, '.agents', 'skills'), origin: 'user' },
-    ...(plugins ? pluginRoots(home) : [])
+    ...(plugins ? pluginRoots(home, warnings) : [])
   ];
 }
 
+// A root with skillDirs (from a plugin manifest) uses those folders. Other roots use <path>/*/SKILL.md.
 function skillFiles(root) {
-  if (!existsSync(root)) return [];
-  return readdirSync(root, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() || entry.isSymbolicLink())
-    .map((entry) => path.join(root, entry.name, 'SKILL.md'))
+  const dirs = root.skillDirs ?? (existsSync(root.path) ? childDirs(root.path) : []);
+  return dirs
+    .map((dir) => path.join(dir, 'SKILL.md'))
     .filter((file) => existsSync(file))
     .sort();
 }
@@ -126,13 +159,14 @@ export function catalogHash(skills) {
 }
 
 export function buildCatalog({ cwd = process.cwd(), home = os.homedir(), extraRoots = [], plugins = true } = {}) {
-  const roots = catalogRoots({ cwd, home, extraRoots, plugins });
+  const warnings = [];
+  const roots = catalogRoots({ cwd, home, extraRoots, plugins, warnings });
   const byRealPath = new Map();
   const byQualifiedName = new Map();
   const skills = [];
   for (const root of roots) {
     root.exists = existsSync(root.path);
-    for (const file of skillFiles(root.path)) {
+    for (const file of skillFiles(root)) {
       const realPath = realpathSync(file);
       const known = byRealPath.get(realPath);
       if (known) {
@@ -172,9 +206,16 @@ export function buildCatalog({ cwd = process.cwd(), home = os.homedir(), extraRo
   return {
     generatedAt: new Date().toISOString(),
     options: { cwd, home, extraRoots, plugins },
-    roots: roots.map((root) => ({ path: root.path, origin: root.origin, plugin: root.plugin ?? null, exists: root.exists })),
+    roots: roots.map((root) => ({
+      path: root.path,
+      origin: root.origin,
+      plugin: root.plugin ?? null,
+      exists: root.exists,
+      ...(root.skillDirs ? { skillDirs: root.skillDirs } : {})
+    })),
     skillCount: skills.length,
     hash: catalogHash(skills),
+    warnings,
     skills
   };
 }
@@ -197,7 +238,7 @@ async function main(argv) {
   });
   const out = path.resolve(values.out);
   await writeJson(out, catalog);
-  emit({ skills: catalog.skillCount, roots: catalog.roots.length, hash: catalog.hash, out });
+  emit({ skills: catalog.skillCount, roots: catalog.roots.length, hash: catalog.hash, warnings: catalog.warnings.length, out });
 }
 
 if (isMain(import.meta.url)) runMain(main);

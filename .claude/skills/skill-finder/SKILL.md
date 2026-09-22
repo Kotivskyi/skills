@@ -79,6 +79,8 @@ node "${CLAUDE_SKILL_DIR}/scripts/index-catalog.mjs" --cwd "$PWD" --out <run>/ca
 
 When the user names another home folder, add `--home <dir>`. Add `--root <dir>` for each extra skill folder that the user names.
 
+When the summary shows `warnings` above 0, copy the messages from `catalog.json` into the report limitations.
+
 ### 6. Summarize episodes
 
 Read [references/summary-schema.md](references/summary-schema.md). Then run:
