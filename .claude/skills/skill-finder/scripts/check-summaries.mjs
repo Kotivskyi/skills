@@ -20,7 +20,8 @@ const isObj = (value) => value !== null && typeof value === 'object' && !Array.i
 const arrayOf = (value, check) => Array.isArray(value) && value.every((item) => isObj(item) && check(item));
 
 // Backends sometimes wrap the array in prose. Try the whole text, then the outermost [...].
-export function extractJsonArray(text) {
+// An object that holds the array under one of `keys` also passes.
+export function extractJsonArray(text, keys = ['summaries']) {
   const trimmed = String(text ?? '').trim();
   const attempts = [trimmed];
   const start = trimmed.indexOf('[');
@@ -30,7 +31,10 @@ export function extractJsonArray(text) {
     try {
       const value = JSON.parse(attempt);
       if (Array.isArray(value)) return value;
-      if (isObj(value) && Array.isArray(value.summaries)) return value.summaries;
+      if (isObj(value)) {
+        const key = keys.find((name) => Array.isArray(value[name]));
+        if (key) return value[key];
+      }
     } catch {
       // Try the next form.
     }

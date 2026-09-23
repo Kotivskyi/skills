@@ -41,8 +41,9 @@ The skill is reusable. It is not tied to one repository. Each source is an adapt
 ```
 sources ──extract──▶ evidence.jsonl + digests/ ──audit──▶ ok
    ──summarize (Pi | subagent | none)──▶ summaries/ ──merge──▶ evidence.jsonl
+   ──scope families (Pi | subagent | none)──▶ families/ ──check──▶ families.json
 catalog roots ──index──▶ catalog.json
-evidence.jsonl + catalog.json + previous run ──aggregate──▶ aggregate.json
+evidence.jsonl + catalog.json + families.json + previous run ──aggregate──▶ aggregate.json
 aggregate.json ──judge (model)──▶ suggestions.json + report.md
         ──Gate 1: user picks one──▶ verify ──▶ harvest evals ──▶ Gate 2: user approves brief ──▶ apply
 ```
@@ -55,6 +56,8 @@ Every run writes to one folder:
 ├── evidence.jsonl           one episode per line
 ├── digests/<episode-id>.md  compact redacted text per episode
 ├── summaries/batch-NN.json  raw summary batches from the backend
+├── families/                episode lines, the question, and raw family answers
+├── families.json            capability families, the shared vocabulary for aggregation
 ├── evidence-audit.json
 ├── catalog.json
 ├── aggregate.json
@@ -196,6 +199,14 @@ One summary per episode, in `references/summary-schema.md`:
 
 `merge-summaries.mjs` writes each summary into its episode's `summary` field. It also sets `outcome` from the summary when the extractor left `unknown`.
 
+### Families
+
+Summaries name work in free text. Each batch of 10 digests invents its own names. The same work rarely gets the same name twice. So a lexical cluster finds exact repeats only. The first real run showed this: 191 episodes gave 766 task clusters, and 753 of them held one episode.
+
+The scope stage fixes this. It follows the AREX-Skill idea: name the capabilities first, then ground the evidence under those names. `scope-families.mjs --run <dir> --plan` writes one line per episode in `families/episodes-NN.md`, in batches of 400. A line holds the episode id, the goal, the procedure names, and the skill candidates. An episode without a summary gives its title. One backend call per batch reads the lines with `references/family-prompt.md` and returns families. A family is one kind of task that comes back, and that a skill could do. It has a kebab-case `name`, a `description` of 40 words or less, and `episodeIds`. The prompt forbids families for a whole area, and families for one episode.
+
+`scope-families.mjs --run <dir> --backend <pi|subagent> --answer <file>...` validates every answer. It checks kebab-case names, non-empty descriptions, no duplicate ids, and no duplicate names. An unknown episode id is dropped and listed in `droppedIds`. A family needs at least one known id. A bad answer retries once. Families with the same name merge across answers. The script writes `families.json` and records the backend in `run.json`. On a no, or after a second failure, `--backend none` records the skip. The aggregation then uses lexical clusters and named skills only. The format is in `references/family-schema.md`.
+
 ## 7. Source adapters
 
 ### Contract
@@ -282,6 +293,16 @@ The file also records `roots`, `generatedAt`, `skillCount`, and `hash`, which is
 
 Each episode contributes keys from four places: `summary.skillCandidates[].name`, `summary.procedures[].name`, `commandPatterns[].pattern`, and normalized correction text. Keys are lowercased, stop words removed, and stemmed lightly by stripping plural `s`. Two keys merge when their token Jaccard overlap is 0.6 or more. The model can merge clusters further in the judgment step.
 
+### Signals
+
+Lexical clusters are one of three signals. Each candidate and each `belowThreshold` entry carries a `signal` field.
+
+- `cluster`: a lexical cluster from the keys above.
+- `named-skill`: one cluster for each model-invoked catalog skill that summaries name in `skillsThatShouldHaveFired`. Only the episodes where the skill did not fire count. The catalog names are a shared vocabulary, so this signal aggregates when free-text keys do not. The key is the qualified name. The labels are the distinct `why` lines, up to 8. The kind hint is always `silent-skill` with that skill as the target.
+- `family`: one cluster for each family in `families.json`. The key is the family name with spaces. The label is the description. Unknown episode ids are dropped. A family with more than `MAX_FAMILY_SHARE` (0.5) of the run's episodes is too broad. It goes to `belowThreshold` with that reason.
+
+The same recurrence, cost, pre-match, and kind rules apply to every signal. A cluster and a family can hold the same episodes. `related` shows this, and the judgment step merges them.
+
 ### Recurrence rule
 
 A candidate passes when it has at least 3 episodes on at least 2 distinct days. Both numbers are flags. Candidates below the rule are counted in `belowThreshold` and listed in `rejected` with the reason. Two sources for one candidate raise confidence but are not required.
@@ -292,12 +313,12 @@ Cost per episode is `toolCalls + assistantMessages + 3 × corrections`, where co
 
 ### Pre-match
 
-For each candidate the aggregator lists the top 3 catalog skills by token overlap between the candidate labels and the skill's description plus triggers, with the overlap value and the count of candidate episodes where that skill was invoked. Names from `summary.skillsThatShouldHaveFired` are added with `named: true`.
+For each candidate the aggregator lists the top 3 catalog skills by token overlap between the candidate labels and the skill's description plus triggers, with the overlap value and the count of candidate episodes where that skill was invoked. Names from `summary.skillsThatShouldHaveFired` are added with `named: true` and the count `namedInEpisodes`.
 
 ### Kind hint
 
 - `misfiring-skill` when one catalog skill was invoked in at least `minEpisodes` of the candidate's episodes and those episodes hold corrections.
-- `silent-skill` when a catalog match has overlap of 0.3 or more, or is named, and was invoked in none of the episodes.
+- `silent-skill` when a catalog match has overlap of 0.3 or more, or is named in 2 or more of the candidate's summaries, and was invoked in none of the episodes. One naming summary is too weak.
 - `new-skill` otherwise.
 
 The model confirms or changes the kind in the judgment step.
@@ -477,12 +498,13 @@ Body, in order:
 4. Run each extractor. Show the one-line summaries.
 5. Run the audit with `--strict`. Stop on blocking and show the errors.
 6. Summaries. Pick the backend. State count, size, and calls. Continue on yes. Run batches, check, retry once, merge.
-7. Index the catalog.
-8. Aggregate, with `--previous auto`.
-9. Judge, per section 11. Write `suggestions.json` and `report.md`.
-10. Gate 1. Show the summary table. Stop.
-11. On a pick: verify, harvest, Gate 2 brief. Stop.
-12. On yes: apply per section 12. List touched files. Stop.
+7. Families. Plan one line per episode. One call per 400 lines with the same backend. Check, retry once, write `families.json`. On a no or a second failure, record `none`.
+8. Index the catalog.
+9. Aggregate, with `--previous auto`.
+10. Judge, per section 11. Write `suggestions.json` and `report.md`.
+11. Gate 1. Show the summary table. Stop.
+12. On a pick: verify, harvest, Gate 2 brief. Stop.
+13. On yes: apply per section 12. List touched files. Stop.
 
 Stop conditions: a missing or unreadable source, a blocking audit, no candidate passes the rule, the user declines at either gate, or a blocked verify. A plugin-origin target does not stop the run; its edit is staged per section 12. When no credible suggestion exists, the report says so. The skill never forces a suggestion.
 
@@ -507,8 +529,10 @@ Cases per script, at minimum:
 - extractors: record count, id prefix, days, redaction count, sidechain counting, skipped records, digest cap, exit 2 on a missing path.
 - audit: duplicate id blocks, malformed record blocks, warnings do not block, strict exit code.
 - check and merge summaries: invalid batch rejected, valid batch merged, outcome filled.
+- scope families, plan: one line per episode with a goal, batches, and the question written.
+- scope families, answers: an invalid answer rejected with each problem, valid answers merged by name, backend none recorded, exit codes.
 - index: dedup by real path, origin priority, plugin namespace, trigger extraction.
-- aggregate: rule threshold, cost and score, pre-match, kind hint, catalog usage, previous statuses.
+- aggregate: rule threshold, cost and score, pre-match, kind hint, catalog usage, previous statuses, named-skill candidates, family candidates, a too-broad family.
 - verify: pointer mismatch blocks, catalog change listed, newly covered blocks.
 - harvest: counts and ratios, filters, near-miss selection, merge dedup, id continuation, shortfall reported.
 

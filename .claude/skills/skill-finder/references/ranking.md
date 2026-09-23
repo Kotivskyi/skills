@@ -12,11 +12,13 @@
 | `RESOLVED_OVERLAP` | 0.5 | A catalog skill now covers an old suggestion. |
 | `NEW_EPISODE_OVERLAP` | 0.6 | A new episode matches an old suggestion. |
 | `MISFIRE_LIFT` | 2 | A skill fires in corrected episodes far more than usual. |
+| `MAX_FAMILY_SHARE` | 0.5 | A family with more episodes than this share of the run is too broad. |
 | `CORRECTION_WEIGHT` | 3 | The cost of one correction. |
 | `PRE_MATCH_TOP` | 3 | Catalog skills listed for each candidate, before named skills. |
 | `--min-episodes` | 3 | The recurrence rule. |
 | `--min-days` | 2 | The recurrence rule. |
-| `--max-candidates` | 40 | Candidates kept in `aggregate.json`. |
+| `NAMED_MIN_EPISODES` | 2 | Summaries in one candidate that must name a skill before the silent rule uses the name. |
+| `--max-candidates` | 60 | Candidates kept in `aggregate.json`. |
 
 ## Tokens and measures
 
@@ -37,6 +39,16 @@ A key needs at least 2 tokens. A key joins the first cluster whose first key has
 
 A task episode joined the cluster through a key that is not a command pattern. The rules below use task episodes only. A cluster with no task episodes is a command cluster. It never becomes a candidate. `commandClusters` lists the top 20. Each candidate lists its `topCommands` and its `commandEpisodes` count.
 
+## Signals
+
+Each candidate has a `signal`. It says where the candidate came from.
+
+- `cluster`: a lexical cluster from the keys above. Two episodes join only when their keys share most tokens. Summaries rarely use the same words for the same work, so this signal finds exact repeats only.
+- `named-skill`: one cluster for each model-invoked catalog skill that summaries name in `skillsThatShouldHaveFired`. Only the episodes where the skill did not fire count. The key is the qualified name. The labels are the distinct `why` lines, up to 8. The kind hint is always `silent-skill` with that skill as the target.
+- `family`: one cluster for each family in `families.json`. See `family-schema.md`. The key is the family name with spaces. The label is the description. Unknown episode ids are dropped. A family with more than `MAX_FAMILY_SHARE` of the run's episodes is too broad. It goes to `belowThreshold` with that reason.
+
+The same recurrence, cost, pre-match, and kind rules apply to every signal. A cluster and a family can hold the same episodes. `related` shows this. `belowThreshold` entries carry the `signal` too.
+
 ## Recurrence
 
 A candidate needs at least 3 task episodes on at least 2 distinct UTC days. Other clusters go to `belowThreshold` with a reason. Two sources raise confidence. They are not required.
@@ -52,14 +64,14 @@ The report shows episodes, days, cost, and score in separate columns.
 
 ## Pre-match
 
-For each candidate, the index lists the 3 catalog skills with the highest overlap. The overlap is between the candidate tokens and the skill tokens. Skill tokens come from the name, the description, and the trigger phrases. A skill with overlap 0 is not listed. A skill that a summary names in `skillsThatShouldHaveFired` is added with `named: true`. Each entry shows `invokedInEpisodes` and `correctedEpisodes`.
+For each candidate, the index lists the 3 catalog skills with the highest overlap. The overlap is between the candidate tokens and the skill tokens. Skill tokens come from the name, the description, and the trigger phrases. A skill with overlap 0 is not listed. A skill that a summary names in `skillsThatShouldHaveFired` is added with `named: true` and `namedInEpisodes`. Each entry shows `invokedInEpisodes` and `correctedEpisodes`.
 
 ## Kind hint
 
 Apply the first rule that matches:
 
 1. `misfiring-skill`: a skill S fired in at least `minEpisodes` of the candidate's corrected episodes. In those episodes, S's rate is also at least 2 times S's firing rate in the run. The run rate counts only episodes from sources that record invocations.
-2. `silent-skill`: a pre-match skill has overlap 0.3 or more, or is named, and fired in none of the candidate's episodes. Skip a skill with `invocation: 'user'`. It cannot fire by itself, so a description edit does not help.
+2. `silent-skill`: a pre-match skill fired in none of the candidate's episodes. It also has overlap 0.3 or more, or 2 or more of the candidate's summaries name it. One naming summary is too weak. Skip a skill with `invocation: 'user'`. It cannot fire by itself, so a description edit does not help.
 3. `new-skill`: all other candidates.
 
 The hint is a start. In the judgment step, change it when the evidence says so, and write the reason.

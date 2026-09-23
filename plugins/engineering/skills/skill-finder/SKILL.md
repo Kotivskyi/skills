@@ -108,7 +108,29 @@ node "${CLAUDE_SKILL_DIR}/scripts/merge-summaries.mjs" --run <run> --backend <pi
 node "${CLAUDE_SKILL_DIR}/scripts/audit-evidence.mjs" <run>/evidence.jsonl --expect-summaries
 ```
 
-### 7. Aggregate
+### 7. Scope families
+
+Read [references/family-schema.md](references/family-schema.md). Then run:
+
+```bash
+node "${CLAUDE_SKILL_DIR}/scripts/scope-families.mjs" --run <run> --plan
+```
+
+The plan writes one line for each episode, in batches of 400. This step needs one backend call for each batch. The yes from step 6 covers these calls. When the user said no in step 6, tell them the line count and ask for a yes now. Without families, the aggregation finds recurring work only when two summaries use the same words. On a no, or when no backend is available, run the next command and go to step 8:
+
+```bash
+node "${CLAUDE_SKILL_DIR}/scripts/scope-families.mjs" --run <run> --backend none
+```
+
+On a yes, use the same backend as in step 6. For each batch, send `<run>/families/question.txt` and the `episodes-NN.md` file. Save the answer to its `answer-NN.json` file. Then check all answers at one time:
+
+```bash
+node "${CLAUDE_SKILL_DIR}/scripts/scope-families.mjs" --run <run> --backend <pi|subagent> --answer <run>/families/answer-01.json
+```
+
+When it exits 1, run the bad batch again one time. After a second failure, run `--backend none`.
+
+### 8. Aggregate
 
 ```bash
 node "${CLAUDE_SKILL_DIR}/scripts/aggregate.mjs" --run <run> --previous auto
@@ -116,23 +138,24 @@ node "${CLAUDE_SKILL_DIR}/scripts/aggregate.mjs" --run <run> --previous auto
 
 When `candidates` is 0, write `suggestions.json` with an empty `suggestions` array. Then write a `report.md` that says no candidate passed the rule. Show the result and stop.
 
-### 8. Judge
+### 9. Judge
 
 Read [references/ranking.md](references/ranking.md) and [references/report-format.md](references/report-format.md). Read `<run>/aggregate.json`. For each candidate, from the top:
 
-1. Open its evidence records in `evidence.jsonl`. Open a digest only when the records do not answer your question.
-2. Keep the kind hint, or change it. Write the reason in one sentence.
-3. Merge candidates that describe the same work. Use `related` and `topCommands`.
-4. Reject one-off work, tool habits, and work that a skill already does well. Write the reason.
-5. Write the proposal for the kind.
+1. Read its `signal`. A `cluster` candidate comes from summaries that use the same words. A `named-skill` candidate comes from summaries that name one catalog skill that did not fire. A `family` candidate groups work that different words describe.
+2. Open its evidence records in `evidence.jsonl`. Open a digest only when the records do not answer your question.
+3. Keep the kind hint, or change it. Write the reason in one sentence.
+4. Merge candidates that describe the same work. Use `related`, `signal`, and `topCommands`. A family and a cluster often hold the same episodes.
+5. Reject one-off work, tool habits, and work that a skill already does well. Write the reason.
+6. Write the proposal for the kind.
 
 Write `<run>/suggestions.json` and `<run>/report.md` in the format of the report reference.
 
-### 9. Gate 1
+### 10. Gate 1
 
 Follow [references/gate-brief.md](references/gate-brief.md). Show the Suggestions table. Ask the user to pick one suggestion id, or none. Stop. Do not write to a skill before the user picks.
 
-### 10. Verify and harvest
+### 11. Verify and harvest
 
 ```bash
 node "${CLAUDE_SKILL_DIR}/scripts/verify-suggestion.mjs" --run <run> --id <id>
@@ -148,11 +171,11 @@ node "${CLAUDE_SKILL_DIR}/scripts/harvest-evals.mjs" --run <run> --id <id>
 
 When `shortfall.total` is more than 0, write synthetic cases to `<run>/evals-<id>/synthetic.json`, and run the same command again with `--add-synthetic <run>/evals-<id>/synthetic.json`. Then fill `expected_output` and `expectations` for each behavior case in `<run>/evals-<id>/evals.json`.
 
-### 11. Gate 2
+### 12. Gate 2
 
 Write the brief in the format of the gate reference. Ask for an explicit yes. Stop.
 
-### 12. Apply
+### 13. Apply
 
 Apply only after an explicit yes. Follow a symlink to the real file, and tell the user the real path.
 

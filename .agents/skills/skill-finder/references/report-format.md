@@ -5,6 +5,7 @@ The judgment step writes two files: `suggestions.json` for the scripts and `repo
 ## suggestions.json
 
 - `id` is `sf-<YYYYMMDD>-<NN>`, from the run date and the rank.
+- `signal` is copied from the first candidate: `cluster`, `named-skill`, or `family`.
 - `candidateKeys` lists the `aggregate.json` candidate keys that the suggestion came from. The eval harvest and the next run use it.
 - `evidence` holds 3 to 8 entries. Each `quote` is a short redacted excerpt of an intent or a correction, copied from `evidence.jsonl`. Each `pointer` is copied from the same record.
 - `catalogChecked` lists each pre-match skill with a verdict in a few words.
@@ -20,6 +21,7 @@ The judgment step writes two files: `suggestions.json` for the scripts and `repo
       "id": "sf-20260922-01",
       "rank": 1,
       "kind": "new-skill",
+      "signal": "family",
       "title": "Deploy the sim runner to staging and verify it",
       "kindReason": "No catalog skill covers the deploy steps, and the user repeats them each week.",
       "confidence": "high",
@@ -76,6 +78,7 @@ Window: <since> to <until>. Sources: <source: episodes, ...>. Summaries: <backen
 ## sf-20260922-01: Deploy the sim runner to staging
 
 - Kind: new-skill. <kindReason>
+- Signal: family. <family description, the named skill, or the cluster key>
 - Recurrence: 7 episodes on 5 days. Sources: claude-sessions, openspec-archive.
 - Cost: median 143, score 1001, corrections 4.
 - Catalog checked: gateway-sim-running (overlap 0.41, fired 0 times): different scope.
@@ -106,8 +109,9 @@ Never invoked in this window: <names>.
 - Audit warnings: <code: count, ...>.
 - Redactions: <kind: count, ...>.
 - Summaries: <backend>, <merged> merged, <missing> missing. Or: skipped, because <reason>.
+- Families: <backend>, <count> families, <assigned> episodes assigned. Or: skipped, because <reason>.
 - Skipped sources: <names, or none>.
-- Thresholds: 3 episodes on 2 days, merge at Jaccard 0.6.
+- Thresholds: 3 episodes on 2 days, merge at Jaccard 0.6, a family holds at most half of the episodes.
 - The run folder holds redacted work history. Keep it out of git.
 ```
 

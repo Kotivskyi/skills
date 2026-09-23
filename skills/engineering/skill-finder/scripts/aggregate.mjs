@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Clusters episodes into candidates, applies the recurrence rule, ranks by cost,
 // pre-matches the catalog, hints a kind, and reports catalog usage and previous-run statuses.
+// Candidates come from three signals: lexical clusters, skills that summaries name, and families.
 // Rules and constants: references/ranking.md.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { UsageError, emit, isMain, parseCli, runMain } from './lib/args.mjs';
-import { readJson, readJsonl, writeJson } from './lib/jsonl.mjs';
+import { readJson, readJsonl, readOptionalJson, writeJson } from './lib/jsonl.mjs';
 import { isLowInformationTitle, jaccard, normalizeText, overlap, round2, skillTokens, tokenize } from './lib/tokens.mjs';
 
 export const MERGE_JACCARD = 0.6;
@@ -16,7 +17,13 @@ export const NEW_EPISODE_OVERLAP = 0.6;
 export const CORRECTION_WEIGHT = 3;
 export const PRE_MATCH_TOP = 3;
 export const MISFIRE_LIFT = 2;
+export const MAX_FAMILY_SHARE = 0.5;
+export const NAMED_MIN_EPISODES = 2;
+export const MAX_CANDIDATES = 60;
 const COMMAND_SOURCE = 'commandPattern';
+const NAMED_SOURCE = 'skillsThatShouldHaveFired';
+const FAMILY_SOURCE = 'family';
+const LABEL_LIMIT = 8;
 const TOP_COMMANDS = 5;
 const COMMAND_CLUSTER_LIMIT = 20;
 const BELOW_THRESHOLD_LIMIT = 100;
@@ -95,6 +102,7 @@ export function clusterEpisodes(episodes) {
     for (const token of occurrence.tokens) cluster.allTokens.add(token);
   }
   return clusters.map((cluster) => ({
+    signal: 'cluster',
     key: pickKey(cluster.labels),
     labels: [...cluster.labels.keys()].sort(),
     keySources: [...cluster.from].sort(),
@@ -159,6 +167,58 @@ function invokedSkills(episodes, resolve) {
   return invoked;
 }
 
+// One cluster per model-invoked catalog skill that summaries name in skillsThatShouldHaveFired.
+// Only the episodes where the skill did not fire count. Labels are the distinct `why` lines.
+export function namedSkillClusters(episodes, catalog, resolve) {
+  const byQualified = new Map(catalog.skills.map((skill) => [skill.qualifiedName, skill]));
+  const groups = new Map();
+  for (const episode of episodes) {
+    const fired = firedSkills(episode, resolve);
+    for (const entry of episode.summary?.skillsThatShouldHaveFired ?? []) {
+      for (const skill of resolve(entry.name)) {
+        if (skill.invocation === 'user' || fired.has(skill.qualifiedName)) continue;
+        const group = groups.get(skill.qualifiedName) ?? { members: new Set(), whys: new Set() };
+        group.members.add(episode.id);
+        if (entry.why) group.whys.add(String(entry.why).trim());
+        groups.set(skill.qualifiedName, group);
+      }
+    }
+  }
+  return [...groups]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([qualifiedName, group]) => {
+      const skill = byQualified.get(qualifiedName);
+      const labels = [...group.whys].sort().slice(0, LABEL_LIMIT);
+      const episodeIds = [...group.members].sort();
+      return {
+        signal: 'named-skill',
+        key: qualifiedName,
+        labels,
+        keySources: [NAMED_SOURCE],
+        episodeIds,
+        taskEpisodeIds: episodeIds,
+        tokens: [...new Set(tokenize(`${skill.name.replace(/[-_]/g, ' ')} ${labels.join(' ')}`))].sort()
+      };
+    });
+}
+
+// One cluster per family from families.json. Unknown episode ids are dropped.
+export function familyClusters(families, byId) {
+  return (families?.families ?? []).map((family) => {
+    const episodeIds = [...new Set((family.episodeIds ?? []).filter((id) => byId.has(id)))].sort();
+    const name = String(family.name ?? '').replace(/-/g, ' ').trim();
+    return {
+      signal: 'family',
+      key: name,
+      labels: [String(family.description ?? '')],
+      keySources: [FAMILY_SOURCE],
+      episodeIds,
+      taskEpisodeIds: episodeIds,
+      tokens: [...new Set(tokenize(`${name} ${family.description ?? ''}`))].sort()
+    };
+  });
+}
+
 // userInvoked: qualified names of user-invoked skills. They cannot fire by themselves, so they are never silent.
 export function kindHintFor(preMatch, invoked, minEpisodes, rates = new Map(), correctedEpisodes = 0, userInvoked = new Set()) {
   const misfire = [...invoked]
@@ -173,8 +233,12 @@ export function kindHintFor(preMatch, invoked, minEpisodes, rates = new Map(), c
       kindReason: `${misfire.name} fired in ${misfire.stats.correctedEpisodes} of ${correctedEpisodes} corrected episodes, ${Math.round(misfire.lift * 10) / 10} times its rate in the run`
     };
   }
+  // One summary that names a skill is weak evidence. Two or more count.
   const silent = preMatch.find(
-    (match) => (match.overlap >= SILENT_OVERLAP || match.named) && match.invokedInEpisodes === 0 && !userInvoked.has(match.qualifiedName)
+    (match) =>
+      (match.overlap >= SILENT_OVERLAP || match.namedInEpisodes >= NAMED_MIN_EPISODES) &&
+      match.invokedInEpisodes === 0 &&
+      !userInvoked.has(match.qualifiedName)
   );
   if (silent) {
     return {
@@ -209,15 +273,18 @@ function buildCandidate(cluster, members, days, context) {
   const corrections = members.reduce((sum, episode) => sum + correctionsOf(episode), 0);
   const correctedEpisodes = members.filter((episode) => correctionsOf(episode) > 0).length;
   const invoked = invokedSkills(members, resolve);
-  const named = new Set(
-    members.flatMap((episode) => (episode.summary?.skillsThatShouldHaveFired ?? []).flatMap((entry) => resolve(entry.name).map((skill) => skill.qualifiedName)))
-  );
+  // How many of the candidate's summaries name each skill in skillsThatShouldHaveFired.
+  const named = new Map();
+  for (const episode of members) {
+    const inEpisode = new Set((episode.summary?.skillsThatShouldHaveFired ?? []).flatMap((entry) => resolve(entry.name).map((skill) => skill.qualifiedName)));
+    for (const qualifiedName of inEpisode) named.set(qualifiedName, (named.get(qualifiedName) ?? 0) + 1);
+  }
   const tokens = new Set(cluster.tokens);
   const scored = catalog.skills
     .map((entry) => ({ entry, overlap: overlap(tokens, skillTokens(entry)) }))
     .sort((a, b) => b.overlap - a.overlap || a.entry.qualifiedName.localeCompare(b.entry.qualifiedName));
   const picked = scored.slice(0, PRE_MATCH_TOP).filter((item) => item.overlap > 0);
-  for (const qualifiedName of [...named].sort()) {
+  for (const qualifiedName of [...named.keys()].sort()) {
     if (picked.some((item) => item.entry.qualifiedName === qualifiedName)) continue;
     const hit = scored.find((item) => item.entry.qualifiedName === qualifiedName);
     if (hit) picked.push(hit);
@@ -229,9 +296,17 @@ function buildCandidate(cluster, members, days, context) {
     overlap: round2(value),
     invokedInEpisodes: invoked.get(entry.qualifiedName)?.episodes ?? 0,
     correctedEpisodes: invoked.get(entry.qualifiedName)?.correctedEpisodes ?? 0,
-    named: named.has(entry.qualifiedName)
+    named: named.has(entry.qualifiedName),
+    namedInEpisodes: named.get(entry.qualifiedName) ?? 0
   }));
+  const kind = kindHintFor(preMatch, invoked, minEpisodes, rates, correctedEpisodes, userInvoked);
+  if (cluster.signal === 'named-skill') {
+    kind.kindHint = 'silent-skill';
+    kind.kindTarget = cluster.key;
+    kind.kindReason = `${cluster.key} is named in ${members.length} episodes and fired in none of them`;
+  }
   return {
+    signal: cluster.signal,
     key: cluster.key,
     labels: cluster.labels,
     keySources: cluster.keySources,
@@ -241,7 +316,7 @@ function buildCandidate(cluster, members, days, context) {
     episodeIds: cluster.taskEpisodeIds,
     commandEpisodes: cluster.episodeIds.length - cluster.taskEpisodeIds.length,
     cost: { median: costMedian, score: members.length * costMedian, corrections },
-    ...kindHintFor(preMatch, invoked, minEpisodes, rates, correctedEpisodes, userInvoked),
+    ...kind,
     preMatch,
     invoked: [...invoked]
       .map(([qualifiedName, stats]) => ({ qualifiedName, ...stats }))
@@ -341,31 +416,37 @@ function addRelated(candidates) {
   }
 }
 
-export function aggregate({ episodes, catalog, minEpisodes = 3, minDays = 2, maxCandidates = 40, previous = null, runId = null }) {
+export function aggregate({ episodes, catalog, families = null, minEpisodes = 3, minDays = 2, maxCandidates = MAX_CANDIDATES, previous = null, runId = null }) {
   const byId = new Map(episodes.map((episode) => [episode.id, episode]));
   const resolve = makeResolver(catalog.skills);
   const context = { catalog, resolve, minEpisodes, rates: firingRates(episodes, resolve) };
   const clusters = clusterEpisodes(episodes);
+  const named = namedSkillClusters(episodes, catalog, resolve);
+  const familyList = familyClusters(families, byId);
   const passed = [];
   const below = [];
   const commandClusters = [];
-  for (const cluster of clusters) {
+  const maxFamilyEpisodes = Math.floor(MAX_FAMILY_SHARE * episodes.length);
+  for (const cluster of [...clusters, ...named, ...familyList]) {
     if (!cluster.taskEpisodeIds.length) {
+      if (cluster.signal !== 'cluster') continue;
       const members = cluster.episodeIds.map((id) => byId.get(id));
       commandClusters.push({ key: cluster.key, episodes: members.length, distinctDays: new Set(members.flatMap((episode) => episode.days ?? [])).size });
       continue;
     }
     const members = cluster.taskEpisodeIds.map((id) => byId.get(id));
     const days = new Set(members.flatMap((episode) => episode.days ?? []));
-    const base = { key: cluster.key, episodes: members.length, distinctDays: days.size };
+    const base = { signal: cluster.signal, key: cluster.key, episodes: members.length, distinctDays: days.size };
     if (members.length < minEpisodes) below.push({ ...base, reason: `${members.length} episode(s), need ${minEpisodes}` });
     else if (days.size < minDays) below.push({ ...base, reason: `${days.size} distinct day(s), need ${minDays}` });
-    else passed.push(buildCandidate(cluster, members, days, context));
+    else if (cluster.signal === 'family' && members.length > maxFamilyEpisodes) {
+      below.push({ ...base, reason: `too broad: ${members.length} of ${episodes.length} episodes, the limit is ${maxFamilyEpisodes}` });
+    } else passed.push(buildCandidate(cluster, members, days, context));
   }
   passed.sort(rankOrder);
   const candidates = passed.slice(0, maxCandidates);
   for (const extra of passed.slice(maxCandidates)) {
-    below.push({ key: extra.key, episodes: extra.episodes, distinctDays: extra.distinctDays, reason: `outside the top ${maxCandidates} by score` });
+    below.push({ signal: extra.signal, key: extra.key, episodes: extra.episodes, distinctDays: extra.distinctDays, reason: `outside the top ${maxCandidates} by score` });
   }
   addRelated(candidates);
   below.sort((a, b) => b.episodes - a.episodes || a.key.localeCompare(b.key));
@@ -375,12 +456,15 @@ export function aggregate({ episodes, catalog, minEpisodes = 3, minDays = 2, max
   return {
     runId,
     generatedAt: new Date().toISOString(),
-    thresholds: { minEpisodes, minDays, mergeJaccard: MERGE_JACCARD, silentOverlap: SILENT_OVERLAP, misfireLift: MISFIRE_LIFT, maxCandidates },
+    thresholds: { minEpisodes, minDays, mergeJaccard: MERGE_JACCARD, silentOverlap: SILENT_OVERLAP, misfireLift: MISFIRE_LIFT, maxFamilyShare: MAX_FAMILY_SHARE, maxCandidates },
     totals: {
       episodes: episodes.length,
       bySource,
       withSummary: episodes.filter((episode) => episode.summary).length,
-      clusters: clusters.length
+      clusters: clusters.length,
+      namedSkills: named.length,
+      families: familyList.length,
+      familiesBackend: families?.backend ?? null
     },
     candidates,
     belowThreshold: below.slice(0, BELOW_THRESHOLD_LIMIT),
@@ -398,17 +482,19 @@ async function main(argv) {
     previous: { type: 'string' },
     'min-episodes': { type: 'number', default: 3 },
     'min-days': { type: 'number', default: 2 },
-    'max-candidates': { type: 'number', default: 40 }
+    'max-candidates': { type: 'number', default: MAX_CANDIDATES }
   });
   if (!values.run) throw new UsageError('--run <dir> is required');
   const runDir = path.resolve(values.run);
   const episodes = await readJsonl(path.join(runDir, 'evidence.jsonl'));
   const catalog = await readJson(path.join(runDir, 'catalog.json'));
+  const families = await readOptionalJson(path.join(runDir, 'families.json'));
   const previousDir = findPreviousRun(runDir, values.previous);
   const previous = previousDir ? { dir: previousDir, suggestions: await readJson(path.join(previousDir, 'suggestions.json')) } : null;
   const result = aggregate({
     episodes,
     catalog,
+    families,
     minEpisodes: values['min-episodes'],
     minDays: values['min-days'],
     maxCandidates: values['max-candidates'],
@@ -420,6 +506,8 @@ async function main(argv) {
     candidates: result.candidates.length,
     belowThreshold: result.belowThresholdTotal,
     commandClusters: result.commandClustersTotal,
+    families: result.totals.families,
+    namedSkills: result.totals.namedSkills,
     previous: result.previous?.statuses.length ?? 0
   });
 }

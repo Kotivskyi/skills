@@ -15,6 +15,16 @@ const correction = (text) => ({ text, pointer: { file: '/s.jsonl', line: 5 } });
 const byEpisodes = (result, id) => result.candidates.find((candidate) => candidate.episodeIds.includes(id));
 const NOISE_TITLES = ['Rotate grafana token', 'Tune the herd import', 'Resize pasture tiles', 'Audit gateway logs', 'Rename the collar table', 'Draft the api changelog', 'Clean old fixtures'];
 const noise = (fields = {}) => NOISE_TITLES.map((title, i) => ep(20 + i, String(10 + i), { title, ...fields }));
+const summaryNaming = (goal, names) => ({
+  goal,
+  outcome: 'completed',
+  procedures: [],
+  corrections: [],
+  repeatedManualSteps: [],
+  skillCandidates: [],
+  skillsThatShouldHaveFired: names.map((name) => ({ name, why: `the digest shows ${name} work by hand` })),
+  confidence: 'high'
+});
 
 test('recurrence rule: 3 episodes on 2 days pass, fewer go below threshold', () => {
   const episodes = [
@@ -136,13 +146,25 @@ test('a skill named by summaries joins pre-match and gives silent-skill', () => 
     confidence: 'high'
   };
   const episodes = ['02', '03', '04'].map((d, i) => ep(i + 1, d, { summary }));
-  const candidate = aggregate({ episodes, catalog }).candidates[0];
+  const candidate = aggregate({ episodes, catalog }).candidates.find((entry) => entry.signal === 'cluster');
   assert.equal(candidate.key, 'fix the flaky herds migration test');
   assert.deepEqual(candidate.preMatch, [
-    { qualifiedName: 'diagnosing-bugs', origin: 'repo', overlap: 0, invokedInEpisodes: 0, correctedEpisodes: 0, named: true }
+    { qualifiedName: 'diagnosing-bugs', origin: 'repo', overlap: 0, invokedInEpisodes: 0, correctedEpisodes: 0, named: true, namedInEpisodes: 3 }
   ]);
   assert.equal(candidate.kindHint, 'silent-skill');
   assert.match(candidate.kindReason, /summary names diagnosing-bugs/);
+});
+
+test('a skill named by one summary of three joins pre-match but gives no silent-skill hint', () => {
+  const catalog = makeCatalog([catalogEntry({ name: 'diagnosing-bugs', description: 'Diagnosis loop for hard bugs.' })]);
+  const named = { ...summaryNaming('Fix the flaky herds migration test', ['diagnosing-bugs']) };
+  const quiet = { ...named, skillsThatShouldHaveFired: [] };
+  const episodes = ['02', '03', '04'].map((d, i) => ep(i + 1, d, { summary: i === 0 ? named : quiet }));
+  const result = aggregate({ episodes, catalog });
+  const candidate = result.candidates.find((entry) => entry.signal === 'cluster');
+  assert.deepEqual(candidate.preMatch.map((match) => [match.qualifiedName, match.named, match.namedInEpisodes]), [['diagnosing-bugs', true, 1]]);
+  assert.equal(candidate.kindHint, 'new-skill');
+  assert.match(result.belowThreshold.find((entry) => entry.key === 'diagnosing-bugs').reason, /1 episode/);
 });
 
 test('catalog usage counts invocations and flags never-invoked skills', () => {
@@ -270,7 +292,7 @@ test('previous run statuses through the CLI: resolved, still-open, stale', () =>
   });
   const result = runScript('aggregate.mjs', ['--run', runDir, '--previous', 'auto']);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(result.summary, { candidates: 1, belowThreshold: 1, commandClusters: 0, previous: 4 });
+  assert.deepEqual(result.summary, { candidates: 1, belowThreshold: 1, commandClusters: 0, families: 0, namedSkills: 0, previous: 4 });
   const written = JSON.parse(readFileSync(path.join(runDir, 'aggregate.json'), 'utf8'));
   assert.equal(written.previous.runId, '20260901-000000-prev');
   const status = Object.fromEntries(written.previous.statuses.map((entry) => [entry.id, entry.status]));
@@ -310,4 +332,86 @@ test('a user-invoked skill never gives silent-skill', () => {
   assert.equal(http.preMatch[0].invokedInEpisodes, 0);
   assert.equal(http.kindHint, 'new-skill');
   assert.equal(http.kindTarget, null);
+});
+
+const GOALS = ['Add the fport 29 decoder for mode set telemetry', 'Promote the heartbeat fix to staging', 'Explain how Postgres derives the plan state'];
+
+test('a skill named in 3 episodes on 2 days gives a silent-skill candidate without a cluster', () => {
+  const catalog = makeCatalog([catalogEntry({ name: 'ship', description: 'Go or no-go checklist before a release.' })]);
+  const episodes = GOALS.map((goal, i) => ep(i + 1, ['02', '02', '05'][i], { summary: summaryNaming(goal, ['ship']) }));
+  const result = aggregate({ episodes, catalog });
+  assert.equal(result.candidates.length, 1);
+  const named = result.candidates[0];
+  assert.equal(named.signal, 'named-skill');
+  assert.equal(named.key, 'ship');
+  assert.deepEqual(named.keySources, ['skillsThatShouldHaveFired']);
+  assert.equal(named.episodes, 3);
+  assert.equal(named.distinctDays, 2);
+  assert.equal(named.kindHint, 'silent-skill');
+  assert.equal(named.kindTarget, 'ship');
+  assert.match(named.kindReason, /ship is named in 3 episodes/);
+  assert.deepEqual(named.preMatch.map((match) => [match.qualifiedName, match.named, match.invokedInEpisodes]), [['ship', true, 0]]);
+  assert.deepEqual(named.labels, ['the digest shows ship work by hand']);
+  assert.equal(result.totals.namedSkills, 1);
+});
+
+test('an episode where the named skill fired does not count, and a user-invoked skill is skipped', () => {
+  const catalog = makeCatalog([
+    catalogEntry({ name: 'ship', description: 'Go or no-go checklist before a release.' }),
+    catalogEntry({ name: 'manual-only', invocation: 'user', description: 'Rotate credentials by hand.' })
+  ]);
+  const fired = { skillsInvoked: [{ name: 'ship', count: 1, sidechain: false }] };
+  const episodes = GOALS.map((goal, i) => ep(i + 1, ['02', '03', '05'][i], { summary: summaryNaming(goal, ['ship', 'manual-only']), ...(i === 0 ? fired : {}) }));
+  const result = aggregate({ episodes, catalog });
+  assert.equal(result.candidates.length, 0);
+  const below = result.belowThreshold.find((entry) => entry.key === 'ship');
+  assert.equal(below.signal, 'named-skill');
+  assert.match(below.reason, /2 episode/);
+  assert.equal(result.belowThreshold.some((entry) => entry.key === 'manual-only'), false);
+});
+
+test('families.json adds family candidates and skips families below the rule or too broad', () => {
+  const runDir = path.join(tmpDir(), 'runs', '20260923-000000-fam');
+  const catalog = makeCatalog([
+    catalogEntry({ name: 'alert-rollout', description: 'Add a Grafana alert and verify it on staging. Use when the user asks for an alert.', triggers: ['asks for an alert'] })
+  ]);
+  const goals = [
+    'Add the fport 6 power decoder', 'Add the fport 29 mode set decoder', 'Add the heartbeat counter decoder',
+    'Add the stall alert in Grafana', 'Add the undeliverable alert', 'Verify the livez alert on staging',
+    'Explain the plan state'
+  ];
+  const episodes = goals.map((goal, i) => ep(i + 1, String(i + 2).padStart(2, '0'), { summary: summaryNaming(goal, []) }));
+  const id = (n) => `claude-sessions:ep-${n}`;
+  const families = {
+    generatedAt: '2026-09-23T00:00:00.000Z',
+    backend: 'pi',
+    families: [
+      { name: 'add-fport-decoder', description: 'Add a LoRaWAN fport decoder and its telemetry parity coverage.', episodeIds: [id(1), id(2), id(3), 'claude-sessions:missing'] },
+      { name: 'grafana-alert-rollout', description: 'Add a Grafana alert rule and verify it on a deployed environment.', episodeIds: [id(4), id(5), id(6)] },
+      { name: 'explain-plan-state', description: 'Explain how the plan state is derived.', episodeIds: [id(7)] },
+      { name: 'backend-work', description: 'Any backend change.', episodeIds: goals.map((_, i) => id(i + 1)) }
+    ]
+  };
+  writeRun(runDir, { episodes, catalog, files: { 'families.json': JSON.stringify(families) } });
+  const result = runScript('aggregate.mjs', ['--run', runDir]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.summary.families, 4);
+  const written = JSON.parse(readFileSync(path.join(runDir, 'aggregate.json'), 'utf8'));
+  const family = (key) => written.candidates.find((candidate) => candidate.key === key);
+  const decoder = family('add fport decoder');
+  assert.equal(decoder.signal, 'family');
+  assert.deepEqual(decoder.keySources, ['family']);
+  assert.deepEqual(decoder.labels, ['Add a LoRaWAN fport decoder and its telemetry parity coverage.']);
+  assert.deepEqual(decoder.episodeIds, [id(1), id(2), id(3)]);
+  assert.equal(decoder.distinctDays, 3);
+  assert.equal(decoder.kindHint, 'new-skill');
+  const alerts = family('grafana alert rollout');
+  assert.equal(alerts.kindHint, 'silent-skill');
+  assert.equal(alerts.kindTarget, 'alert-rollout');
+  const below = Object.fromEntries(written.belowThreshold.map((entry) => [entry.key, entry]));
+  assert.match(below['explain plan state'].reason, /1 episode/);
+  assert.equal(below['explain plan state'].signal, 'family');
+  assert.match(below['backend work'].reason, /too broad/);
+  assert.equal(written.totals.families, 4);
+  assert.equal(written.thresholds.maxFamilyShare, 0.5);
 });
