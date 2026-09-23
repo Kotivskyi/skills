@@ -86,22 +86,20 @@ function childDirs(dir) {
     .map((entry) => path.join(dir, entry.name));
 }
 
-// The skill folders that <installPath>/.claude-plugin/plugin.json lists in `skills`.
-// null means: use the default skills/*/SKILL.md scan.
+// The extra skill folders that <installPath>/.claude-plugin/plugin.json lists in `skills`.
+// Claude Code adds them to the default skills/*/SKILL.md scan, so the index does too.
 function manifestSkillDirs(installPath, warnings) {
   const file = path.join(installPath, '.claude-plugin', 'plugin.json');
-  if (!existsSync(file)) return null;
+  if (!existsSync(file)) return [];
   let manifest;
   try {
     manifest = JSON.parse(readFileSync(file, 'utf8'));
   } catch {
     warnings.push(`cannot parse ${file}`);
-    return null;
+    return [];
   }
   const listed = [].concat(manifest?.skills ?? []).filter((entry) => typeof entry === 'string');
   const found = listed.map((entry) => path.resolve(installPath, entry)).filter((dir) => existsSync(dir));
-  // Claude Code runs the default scan when none of the listed paths exist.
-  if (!found.length) return null;
   // An entry is a skill folder, or a folder of skill folders.
   return found.flatMap((dir) => {
     if (existsSync(path.join(dir, 'SKILL.md'))) return [dir];
@@ -125,8 +123,13 @@ function pluginRoots(home, warnings) {
       if (!install?.installPath) continue;
       const namespace = key.split('@')[0];
       const skillDirs = manifestSkillDirs(install.installPath, warnings);
-      if (skillDirs) roots.push({ path: install.installPath, skillDirs, origin: 'plugin', plugin: key, namespace });
-      else roots.push({ path: path.join(install.installPath, 'skills'), origin: 'plugin', plugin: key, namespace });
+      roots.push({
+        path: path.join(install.installPath, 'skills'),
+        ...(skillDirs.length ? { skillDirs } : {}),
+        origin: 'plugin',
+        plugin: key,
+        namespace
+      });
     }
   }
   return roots;
@@ -144,11 +147,10 @@ export function catalogRoots({ cwd, home, extraRoots = [], plugins = true, warni
   ];
 }
 
-// A root with skillDirs (from a plugin manifest) uses those folders. Other roots use <path>/*/SKILL.md.
+// Every root uses <path>/*/SKILL.md. A plugin root adds the skillDirs from its manifest.
 function skillFiles(root) {
-  const dirs = root.skillDirs ?? (existsSync(root.path) ? childDirs(root.path) : []);
-  return dirs
-    .map((dir) => path.join(dir, 'SKILL.md'))
+  const dirs = [...(existsSync(root.path) ? childDirs(root.path) : []), ...(root.skillDirs ?? [])];
+  return [...new Set(dirs.map((dir) => path.join(dir, 'SKILL.md')))]
     .filter((file) => existsSync(file))
     .sort();
 }

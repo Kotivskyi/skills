@@ -149,6 +149,26 @@ test('plugin skills come from the manifest skills list, or from skills/ when it 
   assert.equal(result.summary.warnings, 0);
 });
 
+test('a manifest skills list adds to the skills/ scan and never drops a default skill', () => {
+  const { catalog } = pluginHome({
+    'delta-tools@acme': {
+      skills: ['skills/main-tool', 'extras/legacy-tool'],
+      manifest: { name: 'delta-tools', skills: ['./extras/legacy-tool'] }
+    },
+    'omega-tools@acme': {
+      skills: ['skills/core-tool', 'extras/side-tool'],
+      manifest: { name: 'omega-tools', skills: ['./extras/side-tool', './skills/core-tool'] }
+    }
+  });
+  assert.deepEqual(catalog.skills.map((skill) => skill.qualifiedName), [
+    'delta-tools:legacy-tool',
+    'delta-tools:main-tool',
+    'omega-tools:core-tool',
+    'omega-tools:side-tool'
+  ]);
+  assert.ok(catalog.skills.every((skill) => skill.aliases.length === 0));
+});
+
 test('a malformed installed_plugins.json gives no plugin skills and one warning', () => {
   const { catalog, result } = pluginHome({ 'beta-tools@acme': { skills: ['skills/beta'] } }, { raw: '{ not json' });
   assert.equal(catalog.skills.filter((skill) => skill.origin === 'plugin').length, 0);

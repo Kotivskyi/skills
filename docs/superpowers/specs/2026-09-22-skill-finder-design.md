@@ -260,7 +260,7 @@ Default roots, in priority order:
 | :--- | :--- |
 | `repo` | `<cwd>/.agents/skills`, `<cwd>/.claude/skills` |
 | `user` | `~/.claude/skills`, `~/.agents/skills` |
-| `plugin` | for each install in `~/.claude/plugins/installed_plugins.json`, each plugin's skills — the folders its `.claude-plugin/plugin.json` lists in `skills`, or `installPath/skills/*/SKILL.md` when it lists none |
+| `plugin` | for each install in `~/.claude/plugins/installed_plugins.json`, each plugin's `installPath/skills/*/SKILL.md`, plus the folders its `.claude-plugin/plugin.json` lists in `skills` |
 
 Extra `--root` folders get origin `repo`.
 
