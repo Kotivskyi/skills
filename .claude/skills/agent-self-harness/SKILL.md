@@ -35,6 +35,7 @@ Read `references/self-harness-loop.md` before running the workflow. It is the st
 1. **Select source.** If the user did not already specify source and discovery mode, ask for them. Supported generic sources:
    - Codex local execution history.
    - Claude Code local execution history.
+   - Claude Code execution history on a remote host (SSH sessions), copied to this Mac first.
    - Explicit already-normalized trace packet path.
 2. **Load source reference.** Read `references/source-discovery.md` for Codex and Claude Code discovery, or `references/trace-packet-schema.md` for explicit packets.
 3. **Normalize traces.** Use the deterministic scripts in `scripts/` to produce redacted trace packets. Do not decide weakness during extraction.

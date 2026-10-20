@@ -44,6 +44,26 @@ Common discovery modes:
 
 Use `scripts/normalize_claude_session.mjs` to emit trace packets from chosen JSONL files.
 
+## Claude Code Sessions on a Remote Host
+
+A session that runs on another machine writes its transcripts on that machine, not on this Mac. This is true for a Claude Desktop SSH session and for the Claude Code CLI on a remote host. The layout is the same as for local sessions:
+
+```text
+<remote>:~/.claude/projects/<encoded-project-path>/*.jsonl
+```
+
+- Each session worktree on the host has its own encoded folder, for example `<project>--claude-worktrees-<name>`. Select every folder of the repo, not only the main checkout.
+- Subagent transcripts and large tool outputs are in a folder with the same name as the session file.
+- Claude Code on the host deletes transcripts older than `cleanupPeriodDays` (default 30 days). Sessions that Claude Desktop starts can be exempt. To keep the history for later runs, set a large `cleanupPeriodDays` in `~/.claude/settings.json` on the host.
+
+Copy the files to this Mac before you normalize them. Use the SSH alias that reaches the host:
+
+```bash
+rsync -a <ssh-alias>:.claude/projects/ ~/claude-transcripts/<host>/
+```
+
+Then use the copy as a Claude Code source with `scripts/normalize_claude_session.mjs`. The copy is raw trace data: keep it local, and ask before raw inspection. On a shared host, other accounts with root can read the files.
+
 ## Explicit Trace Packets
 
 If the user provides a normalized packet path, run `scripts/check_trace_packets.mjs` first. If validation fails, stop and report the field errors. Do not try to mine weaknesses from malformed packets.
