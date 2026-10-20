@@ -213,7 +213,9 @@ for (const { record, line } of rows) {
   const summary = summarize(record, redactionCounts);
   const actor = actorFor(record);
   const kind = kindFor(record, summary);
-  if (taskGoal === 'Unknown Codex task' && actor === 'user' && isTaskGoalCandidate(summary)) taskGoal = cleanTaskGoal(summary);
+  // The message that opens the task is the request itself, not a correction of the agent.
+  const opensTask = taskGoal === 'Unknown Codex task' && actor === 'user' && isTaskGoalCandidate(summary);
+  if (opensTask) taskGoal = cleanTaskGoal(summary);
   const event = {
     timestamp: getTimestamp(record),
     actor,
@@ -223,7 +225,7 @@ for (const { record, line } of rows) {
   };
   timeline.push(event);
   if (isFailure(record, summary)) failures.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
-  if (isUserIntervention(record, summary)) userInterventions.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
+  if (!opensTask && isUserIntervention(record, summary)) userInterventions.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
   for (const artifact of extractArtifacts(summary)) artifacts.set(artifact.path, artifact);
 }
 

@@ -103,6 +103,8 @@ test('codex normalizer recovers task goal and ignores planned or green failure l
   assert.match(packets[0].task.goal, /repair dashboard route generation/);
   assert.equal(packets[0].task.goal.includes('codex_internal_context'), false);
   assert.equal(packets[0].task.goal.includes('response_item'), false);
+  assert.equal(packets[0].userInterventions.length, 0);
+  assert.equal(packets[0].outcome.signals.includes('user_intervention'), false);
   assert.equal(packets[0].outcome.status, 'failed');
   assert.equal(packets[0].failures.length, 1);
   assert.match(packets[0].failures[0].summary, /real-error/);
