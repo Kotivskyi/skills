@@ -119,14 +119,25 @@ function inTimeWindow(record, since, until) {
 const args = parseArgs(process.argv.slice(2));
 if (!args.input || !args.output) usage();
 
-const rows = parseJsonl(await readFile(args.input, 'utf8')).filter(({ record }) => {
+const allRows = parseJsonl(await readFile(args.input, 'utf8'));
+const rows = allRows.filter(({ record }) => {
   if (args['session-id'] && getSessionId(record) !== args['session-id']) return false;
   if (args['project-path'] && record.cwd && record.cwd !== args['project-path']) return false;
   return inTimeWindow(record, args.since, args.until);
 });
 
 const redactionCounts = new Map();
-const sessionId = args['session-id'] || rows.find(({ record }) => getSessionId(record) !== 'unknown-session')?.record && getSessionId(rows[0].record);
+// A fork or a resume copies the records of the earlier session first.
+// So the last session id in the file is the session that wrote the file.
+// Read it before the filters, so that a time window does not change it.
+const fileSessionId = allRows
+  .map(({ record }) => record.sessionId || record.session_id || record.message?.sessionId)
+  .filter(Boolean)
+  .at(-1);
+const sessionId = args['session-id'] || fileSessionId || 'unknown-session';
+// A subagent file has the sessionId of its parent session, and sidechain records with its own agentId.
+// Other files, for example workflow journals, can also have agentId records, but no sidechain records.
+const agentId = allRows.map(({ record }) => (record.isSidechain === true ? record.agentId : undefined)).find(Boolean);
 const timeline = [];
 const failures = [];
 const userInterventions = [];
@@ -157,9 +168,9 @@ if (userInterventions.length) signals.push('user_intervention');
 if (timeline.some((event) => event.kind === 'sidechain')) signals.push('sidechain_context');
 
 const packet = {
-  traceId: `claude-code:${sessionId || 'unknown-session'}`,
+  traceId: agentId ? `claude-code:${sessionId}:agent-${agentId}` : `claude-code:${sessionId}`,
   source: 'claude-code',
-  scope: { kind: 'session', id: sessionId || 'unknown-session' },
+  scope: agentId ? { kind: 'subagent', id: agentId } : { kind: 'session', id: sessionId },
   task: { goal: taskGoal },
   outcome: { status: failures.length ? 'failed' : 'unknown', signals },
   timeline,

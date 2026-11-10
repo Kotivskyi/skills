@@ -1,6 +1,6 @@
 ---
 name: agent-self-harness
-description: Use when improving an agent harness from execution evidence, including mining Codex or Claude Code local sessions, using already-normalized trace packets, proposing competing skill/prompt/tool changes, validating candidates with skill-creator evals, or running a governed Self-Harness loop with explicit approval gates.
+description: Use when improving an agent harness from execution evidence, including mining Codex or Claude Code sessions (local, archived, or from a remote host), using already-normalized trace packets, proposing competing skill/prompt/tool changes, validating candidates with skill-creator evals, or running a governed Self-Harness loop with explicit approval gates.
 ---
 
 # Agent Self-Harness
@@ -33,9 +33,10 @@ After installation, rerun agent-self-harness with the same source request.
 Read `references/self-harness-loop.md` before running the workflow. It is the state machine for this skill.
 
 1. **Select source.** If the user did not already specify source and discovery mode, ask for them. Supported generic sources:
-   - Codex local execution history.
-   - Claude Code local execution history.
-   - Claude Code execution history on a remote host (SSH sessions), copied to this Mac first.
+   - Codex local history: dated sessions and archived sessions.
+   - Codex history on a remote host: a copy of the host files.
+   - Claude Code local history.
+   - Claude Code history on a remote host: desktop app copy of SSH sessions, or a copy of the host files.
    - Explicit already-normalized trace packet path.
 2. **Load source reference.** Read `references/source-discovery.md` for Codex and Claude Code discovery, or `references/trace-packet-schema.md` for explicit packets.
 3. **Normalize traces.** Use the deterministic scripts in `scripts/` to produce redacted trace packets. Do not decide weakness during extraction.

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
+import * as zlib from 'node:zlib';
 
 function parseArgs(argv) {
   const args = {};
@@ -62,7 +63,16 @@ function getTimestamp(record) {
 }
 
 function getSessionId(record) {
-  return record.session_id || record.sessionId || record.payload?.session_id || record.payload?.sessionId || record.payload?.id || record.id || 'unknown-session';
+  const payload = record.payload || {};
+  // In session_meta, payload.id is this thread. A subagent thread has the root session in payload.session_id.
+  if (record.type === 'session_meta') {
+    return payload.id || payload.session_id || record.session_id || record.sessionId || 'unknown-session';
+  }
+  // The older rollout format has the session id in a first line with no type and no payload.
+  if (!record.type && !record.payload && record.id) return record.id;
+  // In other records, payload.id is an item id, not a session id.
+  // A token_usage_record has this thread in payload.thread_id and the root session in payload.session_id.
+  return record.session_id || record.sessionId || payload.thread_id || payload.session_id || payload.sessionId || 'unknown-session';
 }
 
 function redactText(text, counts) {
@@ -92,27 +102,32 @@ function structuredStrings(record) {
   }
   const messageText = contentText(payload.content || record.content);
   if (messageText) strings.push(messageText);
-  for (const key of ['message', 'text', 'command', 'result', 'output', 'name']) {
+  for (const key of ['message', 'text', 'command', 'input', 'result', 'output', 'name']) {
     if (typeof payload[key] === 'string') strings.push(payload[key]);
   }
+  // A tool output can be a list of content parts, for example [{ type: 'input_text', text }].
+  if (Array.isArray(payload.output)) strings.push(contentText(payload.output));
   if (payload.arguments) {
     strings.push(typeof payload.arguments === 'string' ? payload.arguments : JSON.stringify(payload.arguments));
   }
   return strings.filter((item) => item.trim().length > 0);
 }
 
-function summarize(record, counts) {
+function recordText(record) {
   const structured = structuredStrings(record);
-  const raw = (structured.length ? structured : collectStrings(record)).join(' ');
-  const compact = raw.replace(/\s+/g, ' ').trim() || JSON.stringify(record);
+  return (structured.length ? structured : collectStrings(record)).join(' ');
+}
+
+function summarize(text, record, counts) {
+  const compact = text.replace(/\s+/g, ' ').trim() || JSON.stringify(record);
   return redactText(compact.slice(0, 700), counts);
 }
 
 function isToolRecord(record) {
   const payload = record.payload || {};
   return Boolean(
-    payload.type === 'function_call_output' ||
-      payload.type === 'function_call' ||
+    // function_call, custom_tool_call, and their *_output records.
+    /_call(_output)?$/.test(payload.type || '') ||
       payload.tool ||
       payload.command ||
       payload.result
@@ -139,9 +154,9 @@ function kindFor(record, summary) {
   return record.type || 'event';
 }
 
-function exitCodeFor(summary) {
-  const match = summary.match(/\b(?:Process exited with code|exit code)\s*:?\s*([0-9]+)/i);
-  return match ? Number(match[1]) : null;
+// Plain output says "Process exited with code N". Code-mode output has JSON "exit_code": N for each command.
+function exitCodesFor(text) {
+  return [...text.matchAll(/(?:\b(?:Process exited with code|exit code)|"exit_code")\s*:?\s*(-?[0-9]+)/gi)].map((match) => Number(match[1]));
 }
 
 function isPlannedRedStep(record, summary) {
@@ -161,9 +176,12 @@ function cleanTaskGoal(summary) {
   return text.replace(/\s+/g, ' ').trim().slice(0, 180);
 }
 
-function isFailure(record, summary) {
-  const exitCode = exitCodeFor(summary);
-  if (exitCode !== null) return exitCode > 0;
+// `text` is the full record text. The summary keeps only its first 700 characters.
+function isFailure(record, summary, text) {
+  // A *_call record is the request. Only its *_output record shows the result.
+  if (/_call$/.test(record.payload?.type || '')) return false;
+  const exitCodes = exitCodesFor(text);
+  if (exitCodes.length) return exitCodes.some((code) => code !== 0);
   if (isPlannedRedStep(record, summary)) return false;
   if (isToolRecord(record)) {
     return /\b(fail(?:ed|ure)?|error|non-zero|missing artifact|assertion)\b/i.test(summary);
@@ -192,17 +210,34 @@ function inTimeWindow(record, since, until) {
   return true;
 }
 
+// Codex compresses many session files with zstd (`*.jsonl.zst`).
+async function readSessionText(path) {
+  const data = await readFile(path);
+  if (path.endsWith('.zst') && typeof zlib.zstdDecompressSync !== 'function') {
+    usage(`this Node cannot read zstd files. Decompress first: zstd -dc ${path} > <run-folder>/<name>.jsonl`);
+  }
+  try {
+    return (path.endsWith('.zst') ? zlib.zstdDecompressSync(data) : data).toString('utf8');
+  } catch (error) {
+    if (error.code === 'ERR_STRING_TOO_LONG') usage(`${path} is too large to read as one string. Split it into smaller JSONL files first.`);
+    throw error;
+  }
+}
+
 const args = parseArgs(process.argv.slice(2));
 if (!args.input || !args.output) usage();
 
-const rows = parseJsonl(await readFile(args.input, 'utf8')).filter(({ record }) => {
+const allRows = parseJsonl(await readSessionText(args.input));
+const rows = allRows.filter(({ record }) => {
   const rowSessionId = getSessionId(record);
   if (args['session-id'] && rowSessionId !== 'unknown-session' && rowSessionId !== args['session-id']) return false;
   return inTimeWindow(record, args.since, args.until);
 });
 
 const redactionCounts = new Map();
-const sessionId = args['session-id'] || rows.map(({ record }) => getSessionId(record)).find((id) => id !== 'unknown-session') || 'unknown-session';
+// The first session id of the file is this thread. A fork copies the session_meta of its parent after it.
+// Read it before the filters, so that a time window does not change it.
+const sessionId = args['session-id'] || allRows.map(({ record }) => getSessionId(record)).find((id) => id !== 'unknown-session') || 'unknown-session';
 const timeline = [];
 const failures = [];
 const userInterventions = [];
@@ -210,7 +245,8 @@ const artifacts = new Map();
 let taskGoal = 'Unknown Codex task';
 
 for (const { record, line } of rows) {
-  const summary = summarize(record, redactionCounts);
+  const text = recordText(record);
+  const summary = summarize(text, record, redactionCounts);
   const actor = actorFor(record);
   const kind = kindFor(record, summary);
   // The message that opens the task is the request itself, not a correction of the agent.
@@ -224,7 +260,7 @@ for (const { record, line } of rows) {
     rawPointer: { file: args.input, line }
   };
   timeline.push(event);
-  if (isFailure(record, summary)) failures.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
+  if (isFailure(record, summary, text)) failures.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
   if (!opensTask && isUserIntervention(record, summary)) userInterventions.push({ timestamp: event.timestamp, summary, rawPointer: event.rawPointer });
   for (const artifact of extractArtifacts(summary)) artifacts.set(artifact.path, artifact);
 }

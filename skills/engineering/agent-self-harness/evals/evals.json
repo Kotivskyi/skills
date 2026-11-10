@@ -24,6 +24,8 @@
         "The output asks for source selection before inspecting history",
         "Codex local session discovery is listed",
         "Claude Code local session discovery is listed",
+        "Claude Code sessions on a remote host are listed",
+        "Codex archived sessions or Codex sessions on a remote host are listed",
         "Explicit normalized packets are listed"
       ]
     },
