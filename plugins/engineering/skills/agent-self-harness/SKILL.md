@@ -37,8 +37,9 @@ Read `references/self-harness-loop.md` before running the workflow. It is the st
    - Codex history on a remote host: a copy of the host files.
    - Claude Code local history.
    - Claude Code history on a remote host: desktop app copy of SSH sessions, or a copy of the host files.
+   - Unharnessed seat sessions, local or a copy from a remote host. No normalizer exists yet.
    - Explicit already-normalized trace packet path.
-2. **Load source reference.** Read `references/source-discovery.md` for Codex and Claude Code discovery, or `references/trace-packet-schema.md` for explicit packets.
+2. **Load source reference.** Read `references/source-discovery.md` for Codex, Claude Code, and Unharnessed discovery, or `references/trace-packet-schema.md` for explicit packets.
 3. **Normalize traces.** Use the deterministic scripts in `scripts/` to produce redacted trace packets. Do not decide weakness during extraction.
 4. **Mine weaknesses.** Invoke `agent-weakness-miner` on the normalized packets. It must produce `weaknesses.json` and a compact Markdown review.
 5. **Gate 1: weakness selection.** Present compact weakness packets and stop. The user must select exactly one weakness before candidate work begins. Do not create worktrees, add evals, or edit files before this approval.

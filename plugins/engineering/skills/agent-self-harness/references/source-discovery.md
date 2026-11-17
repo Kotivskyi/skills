@@ -124,6 +124,44 @@ Then use the host copy as a Claude Code source with `scripts/normalize_claude_se
 - A wrong `--project-path`, for example a path on this Mac, gives no error. The packet then holds only records that have no `cwd`. Make sure that the timeline has `user_message` events.
 - An app copy holds metadata records of the desktop app, for example `api-request` and `bridge-session`. They become timeline events, and some of them can show as failures.
 
+## Unharnessed Sessions
+
+Unharnessed (`https://github.com/unharnessed-agent/Unharnessed`) is a coding agent with one tool: a Python REPL with `bash()`.
+The `subagent-driven-development` skill of `pastorix-backend` uses it as the default implementer seat, with `gpt-6.1-sol`.
+The skill gives each task its own session folder with `--session-dir`. That folder is in a central place on each machine:
+
+```text
+~/.unharnessed/sessions/<repo>/<worktree>/<change>/task-<N>/*.jsonl   # the transcript of one task, all dispatches
+~/.unharnessed/sessions/<repo>/<worktree>/<change>/fix/*.jsonl        # the fix wave of the change
+~/.unharnessed/sessions/<repo>/<worktree>/<change>/task-<N>.dispatch-<n>.out   # the stdout and stderr of one dispatch
+```
+
+- `<repo>` is the name of the main checkout folder. `<worktree>` is the name of the worktree folder. `<change>` is the OpenSpec change, or the plan name.
+- A re-dispatch continues the same session (`-c`), so it adds lines to the same transcript. The controller records a line boundary before each dispatch.
+- The central folder exists from 2026-11-17. Older seat runs wrote to `<worktree>/.sdd/<plan>/unh/task-<N>/`, which a worktree cleanup deletes.
+- The 2026-11-17 seat experiment (exp7) has a copy of its transcripts in the notes folder of that work: `exp7-unharnessed/results/sessions/`.
+- A run without `--session-dir` writes to `~/.unharnessed/sessions/` directly, with no subfolders.
+
+The transcript uses the pi session format (`"type":"session","version":3`). Each line is one record:
+
+- `session`: the first record, with `id`, `timestamp`, `cwd`, and `git`.
+- `message`: one record for each turn. `message.role` is `user`, `assistant`, or `toolResult`. Each assistant record has `provider`, `model`, and `usage`, with `usage.cost.total` at the list price.
+- `model_change`, `thinking_level_change`, `service_tier_change`: settings records.
+
+The model writes Python code. Its shell commands are `bash()` calls inside that code, not separate tool calls.
+
+No normalizer for this format exists yet. To mine an Unharnessed session, tell the user, and ask for a normalized trace packet file. Then follow "Explicit Trace Packets".
+
+### Unharnessed Sessions on a Remote Host
+
+A seat on a remote host, for example the `office-linux` remote Claude environment, writes the same layout under `~/.unharnessed/sessions/` on the host. Copy it to this Mac before you read it:
+
+```bash
+rsync -a <ssh-alias>:.unharnessed/sessions/ ~/unharnessed-transcripts/<host>/sessions/
+```
+
+Do not copy `~/.unharnessed/auth.json`. It holds the sign-in token of the user.
+
 ## Find a Session by Id or Text
 
 The session search tool and a text search read raw transcript text. Ask the user before you use them, as "Raw Trace Access" says. Show only ids and file paths.
